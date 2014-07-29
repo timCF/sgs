@@ -10,10 +10,7 @@ defmodule CompileTest do
 		{:ok , 0, @timeout}
 	end
 
-	cast_sgs reset_state(arg1, arg2) do
-		IO.puts "args are:"
-		IO.inspect arg1
-		IO.inspect arg2
+	cast_sgs reset_state do
 		IO.puts "set state to 0"
 		{:noreply, 0, @timeout}
 	end
