@@ -27,4 +27,8 @@ defmodule CompileTest do
 		IO.puts "auto increment of state: #{some_state+1}"
 		{:noreply, some_state+1, @timeout}
 	end
+
+	# if you are not need this GS over, cleanup disk using function cleanup_sgs(key)
+
+
 end

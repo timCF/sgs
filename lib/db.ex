@@ -41,4 +41,10 @@ defmodule Exdk do
       end
     end
   end
+  def delete(key) do
+    Amnesia.transaction do
+      DB.Storage.delete(key)
+    end
+  end
+
 end

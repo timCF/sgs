@@ -131,4 +131,8 @@ defmodule Sgs.Macro do
 		end
 	end
 
+	def cleanup_sgs(name) do
+		Exdk.delete(name)
+	end
+
 end
