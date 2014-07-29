@@ -46,7 +46,7 @@ defmodule Sgs.Macro do
 				some_else
 			end
 
-			# cast here
+			# cast and info here
 			defp cast_info_return( {:noreply, state}, name ) do
 				Exdk.put(name, state)
 				{:noreply, name}
@@ -59,6 +59,8 @@ defmodule Sgs.Macro do
 				Exdk.put(name, state)
 				{:stop, reason, state}
 			end
+
+
 
 			#call here
 			defp call_return( {:reply, reply, state}, name ) do
@@ -90,60 +92,67 @@ defmodule Sgs.Macro do
 	end
 
 	defmacro init_sgs([do: body]) do
-		res = quote do
+		quote do
 			# notice, GS is named, name !!is atom!! 
 			definit(name) do 
 				:erlang.register(name, self())
 				init_return( unquote(body), name )
 			end
 		end
-
-		IO.puts Macro.to_string(res)
-
-		res
-
 	end
 
-	defmacro cast_sgs(funcdef, [do: body]) do
-		res = quote do
-			defcast	unquote(funcdef), state: name do
-				state = Exdk.get(name) # bound variable "state" to use it inside body of macro. Bad code, I know
-				cast_info_return(unquote(body), name) # cast and info return values are the same
-			end
-		end |> modify_AST(Sgs.Macro, nil)
-
-		IO.puts Macro.to_string(res)
-
-		res
-
+	defmacro cast_sgs(funcdef, opts \\ [], [do: body]) do
+		case opts[:state] do
+			some_state ->
+				quote do
+					defcast	unquote(funcdef), state: name do
+						unquote(some_state) = Exdk.get(name) # bound state with variable, defined by user 
+						cast_info_return(unquote(body), name) # cast and info return values are the same
+					end
+				end |> modify_AST(Sgs.Macro, nil)
+			nil -> 
+				quote do
+					defcast	unquote(funcdef), state: name do
+						cast_info_return(unquote(body), name) # cast and info return values are the same
+					end
+				end |> modify_AST(Sgs.Macro, nil)
+		end
 	end
 
-	defmacro call_sgs(funcdef, [do: body]) do
-		res = quote do
-			defcall	unquote(funcdef), state: name do
-				state = Exdk.get(name) # bound variable "state" to use it inside body of macro. Bad code, I know
-				call_return(unquote(body), name)
-			end
-		end |> modify_AST(Sgs.Macro, nil)
-
-		IO.puts Macro.to_string(res)
-
-		res
-
+	defmacro call_sgs(funcdef, opts \\ [], [do: body]) do
+		case opts[:state] do
+			some_state ->
+				quote do
+					defcall	unquote(funcdef), state: name do
+						unquote(some_state) = Exdk.get(name) # bound state with variable, defined by user 
+						call_return(unquote(body), name)
+					end
+				end |> modify_AST(Sgs.Macro, nil)
+			nil ->
+				quote do
+					defcall	unquote(funcdef), state: name do
+						call_return(unquote(body), name)
+					end
+				end |> modify_AST(Sgs.Macro, nil)
+		end
 	end
 
-	defmacro info_sgs(some, [do: body]) do
-		res = quote do
-			definfo	unquote(some), state: name do
-				state = Exdk.get(name) # bound variable "state" to use it inside body of macro. Bad code, I know
-				cast_info_return(unquote(body), name) 
-			end
-		end |> modify_AST(Sgs.Macro, nil)
-
-		IO.puts Macro.to_string(res)
-
-		res
-
+	defmacro info_sgs(some, opts \\ [], [do: body]) do
+		case opts[:state] do
+			some_state ->
+				quote do
+					definfo	unquote(some), state: name do
+						unquote(some_state) = Exdk.get(name) # bound state with variable, defined by user 
+						cast_info_return(unquote(body), name) 
+					end
+				end |> modify_AST(Sgs.Macro, nil)
+			nil ->
+				quote do
+					definfo	unquote(some), state: name do
+						cast_info_return(unquote(body), name) 
+					end
+				end |> modify_AST(Sgs.Macro, nil)
+		end
 	end
 
 end
