@@ -67,13 +67,25 @@ defmodule Sgs.Macro do
 		end
 	end
 
-	defmacro init_sgs([do: body]) do
-		quote do
-			# notice, GS is named, name !!is atom!! 
-			definit(name) do 
-				:erlang.register(name, self())
-				init_return( unquote(body), name )
-			end
+	defmacro init_sgs(opts \\ [], [do: body]) do
+		case opts[:nameproc] do
+			nil ->
+				quote do
+					# notice, GS is named, name !!is atom!! 
+					definit(name) do 
+						:erlang.register(name, self())
+						init_return( unquote(body), name )
+					end
+				end
+			nameproc ->
+				quote do
+					# notice, GS is named, name !!is atom!! 
+					definit(name) do 
+						:erlang.register(name, self())
+						unquote(nameproc) = name
+						init_return( unquote(body), name )
+					end
+				end
 		end
 	end
 
