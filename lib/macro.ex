@@ -34,7 +34,7 @@ defmodule Sgs.Macro do
 			end
 			defp cast_info_return( {:stop, reason, state}, name ) do
 				Exdk.put(name, state)
-				{:stop, reason, state}
+				{:stop, reason, name}
 			end
 
 
