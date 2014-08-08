@@ -1,3 +1,5 @@
+
+"""
 use Amnesia
 
 defmodule DBA do
@@ -46,5 +48,5 @@ defmodule Exdk do
       DB.Storage.delete(key)
     end
   end
-
 end
+"""

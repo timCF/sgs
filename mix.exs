@@ -11,7 +11,7 @@ defmodule Sgs.Mixfile do
   #
   # Type `mix help compile.app` for more information
   def application do
-    [applications: [],
+    [applications: [:exdk],
      mod: {Sgs, []}]
   end
 
@@ -26,7 +26,8 @@ defmodule Sgs.Mixfile do
   # Type `mix help deps` for more examples and options
   defp deps do
     [
-      {:amnesia, github: "meh/amnesia"},
+      #{:amnesia, github: "meh/amnesia"},
+            {:exdk, github: "timCF/exdk"},
       {:exactor, github: "sasa1977/exactor"}
     ]
   end

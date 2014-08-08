@@ -6,7 +6,7 @@ defmodule Sgs do
   def start(_type, _args) do
     import Supervisor.Spec, warn: false
 
-    DBA.install_disk
+    #DBA.install_disk
 
     children = [ #worker(CompileTest, [:CompileTest])
       # Define workers and child supervisors to be supervised
