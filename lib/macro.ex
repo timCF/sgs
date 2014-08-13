@@ -77,7 +77,7 @@ defmodule Sgs.Macro do
 	end
 
 	defmacro init_sgs(opts \\ [], [do: body]) do
-		res = case opts[:nameproc] do
+		case opts[:nameproc] do
 			nil ->
 				quote do
 					# notice, GS is named, name !!is atom!! 
@@ -98,11 +98,6 @@ defmodule Sgs.Macro do
 					end
 				end
 		end
-
-		IO.puts(Macro.to_string(res))
-
-		res
-
 	end
 
 	defmacro cast_sgs(funcdef, opts \\ [], [do: body]) do
