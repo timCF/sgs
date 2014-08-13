@@ -67,13 +67,23 @@ defmodule Sgs.Macro do
 		end
 	end
 
+	defmacro init_state_macro(state, name) do
+		case state do
+			nil -> 	quote do end
+			_ -> 	quote do
+						unquote(state) = Exdk.get(unquote(name))
+					end
+		end
+	end
+
 	defmacro init_sgs(opts \\ [], [do: body]) do
-		case opts[:nameproc] do
+		res = case opts[:nameproc] do
 			nil ->
 				quote do
 					# notice, GS is named, name !!is atom!! 
 					definit(name) do 
 						:erlang.register(name, self())
+						init_state_macro(unquote(opts[:state]), name)
 						init_return( unquote(body), name )
 					end
 				end
@@ -83,10 +93,16 @@ defmodule Sgs.Macro do
 					definit(name) do 
 						:erlang.register(name, self())
 						unquote(nameproc) = name
+						init_state_macro(unquote(opts[:state]), name)
 						init_return( unquote(body), name )
 					end
 				end
 		end
+
+		IO.puts(Macro.to_string(res))
+
+		res
+
 	end
 
 	defmacro cast_sgs(funcdef, opts \\ [], [do: body]) do

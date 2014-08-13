@@ -4,8 +4,9 @@ defmodule CompileTest do
 	
 	@timeout :timer.seconds(10)
 
-	init_sgs do
+	init_sgs state: state do
 		IO.puts "HELLO, WORLD!"
+		IO.puts "Init state is #{inspect state}"
 		IO.puts "If state not defined in DB, set it 0"
 		{:ok , 0, @timeout}
 	end

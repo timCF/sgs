@@ -8,7 +8,7 @@ defmodule Sgs do
 
     #DBA.install_disk
 
-    children = [ #worker(CompileTest, [:CompileTest])
+    children = [ worker(CompileTest, [:CompileTest])
       # Define workers and child supervisors to be supervised
       # worker(Sgs.Worker, [arg1, arg2, arg3])
     ]
