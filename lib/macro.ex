@@ -154,6 +154,27 @@ defmodule Sgs.Macro do
 		end
 	end
 
+	defmacro terminate_sgs opts \\ [], [do: body] do
+		terminator1 = case opts[:state] do
+						nil -> quote do end
+						some_state -> quote do unquote(some_state) = Exdk.get(nameproc) end
+					end
+		terminator2 = case opts[:reason] do
+						nil -> quote do end
+						some_reason -> quote do unquote(some_reason) = reason end
+					end
+		res = quote do
+			def terminate( reason, nameproc ) do
+				unquote(terminator1)
+				unquote(terminator2)
+				unquote(body)
+				Exdk.delete(nameproc)
+			end
+		end
+		IO.puts (Macro.to_string(res))
+		res
+	end
+
 	def cleanup_sgs(name) do
 		Exdk.delete(name)
 	end

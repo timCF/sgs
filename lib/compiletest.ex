@@ -29,6 +29,10 @@ defmodule CompileTest do
 		{:noreply, some_state+1, @timeout}
 	end
 
+	terminate_sgs reason: reason, state: state do
+		IO.puts "Terminating becouse of reason #{inspect reason}, when state was #{inspect state}"
+	end
+
 	# if you are not need this GS over, cleanup disk using function cleanup_sgs(key)
 
 end
