@@ -64,6 +64,9 @@ defmodule Sgs.Macro do
 				{:stop, reason, name}
 			end
 
+			terminate_sgs [] do end
+			defoverridable [ terminate: 2 ]
+
 		end
 	end
 
