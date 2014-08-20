@@ -33,6 +33,4 @@ defmodule CompileTest do
 		IO.puts "Terminating becouse of reason #{inspect reason}, when state was #{inspect state}"
 	end
 
-	# if you are not need this GS over, cleanup disk using function cleanup_sgs(key)
-
 end

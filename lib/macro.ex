@@ -168,7 +168,9 @@ defmodule Sgs.Macro do
 				unquote(terminator1)
 				unquote(terminator2)
 				unquote(body)
-				Exdk.delete(nameproc)
+				if (reason == :normal) do
+					Exdk.delete(nameproc)
+				end
 			end
 		end
 		IO.puts (Macro.to_string(res))
