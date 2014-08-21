@@ -1,49 +1,30 @@
 Sgs
 ===
 
-Just wrapper under ExActor.GenServer , it keep its state on HD (using ets, that saves to HD in some period). Now is one condition to successful using: DO NOT use pattern matching in opts of macros.
+Wrapper under ExActor.GenServer , it keep its state on disc (using ets). To use it, add :sgs to your deps and list of applications. Add this to target module
 
-Example of good usage:
-
-defmodule CompileTest do
-
+```elixir
 	use Sgs.Macro
-	
-	@timeout :timer.seconds(10)
+```
 
-	init_sgs state: state do
+And than define callbacks/api like in ExActor, but with some extra options. You can use pattern matching and guards where you want:
+
+```elixir
+	init_sgs opts do
 		IO.puts "HELLO, WORLD!"
 		IO.puts "Init state is #{inspect state}"
 		IO.puts "If state not defined in DB, set it 0"
 		{:ok , 0, @timeout}
 	end
 
-	cast_sgs reset_state do
-		IO.puts "set state to 0"
-		{:noreply, 0, @timeout}
-	end
+	# where opts is keylist like this
 
-	call_sgs add_to_state(arg1), state: state do
-		IO.puts "args are:"
-		IO.inspect arg1
-		IO.puts "state now is #{state+10}"
-		{:reply, state+10, state+10, @timeout}
-	end
+	[
+		nameproc: nameproc, # access to registered name of this gen_server. In sgs, gen servers are always registered!
+		state: state, # access to state, if no state in storage, in becomes :not_found
+		when: when, # here you can define guard expression
+		cleanup_delay: cleanup_delay, # it can be integer or :infinity. When process is not alive, this value means timeout, after it reached - state of process will be deleted (only in case where process not alive now).
+		cleanup_reasons: cleanup_reasons # here can be defined list of reasons of termination. If process terminate with one of them - it state will delete immediately
+	]
 
-	info_sgs :timeout, state: some_state do
-		IO.puts "timeout!"
-		IO.puts "auto increment of state: #{some_state+1}"
-		{:noreply, some_state+1, @timeout}
-	end
-
-	terminate_sgs reason: reason, state: state do
-		IO.puts "Terminating becouse of reason #{inspect reason}, when state was #{inspect state}"
-	end
-
-end
-
-But NEVER write something like:
-
-	terminate_sgs reason: reason, state: %{field1: 1, field2: some_else} do
-		IO.puts "Terminating becouse of reason #{inspect reason}, when state was #{inspect state}"
-	end
+```
