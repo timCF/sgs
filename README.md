@@ -11,10 +11,7 @@ And than define callbacks/api like in ExActor, but with some extra options. You 
 
 ```elixir
 	init_sgs opts do
-		IO.puts "HELLO, WORLD!"
-		IO.puts "Init state is #{inspect state}"
-		IO.puts "If state not defined in DB, set it 0"
-		{:ok , 0, @timeout}
+		any_expression
 	end
 
 	# where opts is keylist like this
@@ -32,7 +29,7 @@ And than define callbacks/api like in ExActor, but with some extra options. You 
 		# By default, cleanup_reasons == [:normal]
 	]
 
-	example
+	# example :
 
 	init_sgs state: :not_found, nameproc: name do
 		IO.puts "HELLO, #{name}!"
@@ -57,7 +54,7 @@ And than define callbacks/api like in ExActor, but with some extra options. You 
 
 ```
 
-In call_sgs, cast_sgs and info_sgs macro, you can use options: state, nameproc and when. Example
+In call_sgs, cast_sgs and info_sgs macro, you can use options: state, nameproc and when. Example :
 
 ```elixir
 	cast_sgs reset_state do
@@ -79,7 +76,7 @@ In call_sgs, cast_sgs and info_sgs macro, you can use options: state, nameproc a
 	end
 ```
 
-In terminate_sgs macro, you can use options: state, nameproc, when and reason. Example
+In terminate_sgs macro, you can use options: state, nameproc, when and reason. Example :
 
 ```elixir
 	terminate_sgs reason: reason, state: state do
