@@ -20,11 +20,37 @@ And than define callbacks/api like in ExActor, but with some extra options. You 
 	# where opts is keylist like this
 
 	[
-		nameproc: nameproc, # access to registered name of this gen_server. In sgs, gen servers are always registered!
+		nameproc: nameproc, # access to registered name of this gen_server. 
+		# In sgs, gen servers are always registered!
 		state: state, # access to state, if no state in storage, in becomes :not_found
 		when: when, # here you can define guard expression
-		cleanup_delay: cleanup_delay, # it can be integer or :infinity. When process is not alive, this value means timeout, after it reached - state of process will be deleted (only in case where process not alive now).
-		cleanup_reasons: cleanup_reasons # here can be defined list of reasons of termination. If process terminate with one of them - it state will delete immediately
+		cleanup_delay: cleanup_delay, # it can be integer or :infinity. 
+		# When process is not alive, this value means timeout, after it reached - state of process will be deleted (only in case where process not alive now).
+		cleanup_reasons: cleanup_reasons # here can be defined list of reasons of termination. 
+		#If process terminate with one of them - it state will delete immediately. By default, cleanup_reasons == [:normal]
 	]
+
+	example
+
+	init_sgs state: :not_found, nameproc: name do
+		IO.puts "HELLO, #{name}!"
+		IO.puts "Can't found your state :("
+		IO.puts "Set it 0"
+		{:ok , 0, @timeout}
+	end
+
+	init_sgs state: state, nameproc: name, when: (name == :myself) do
+		IO.puts "HELLO, here i am!"
+		IO.puts "Init state is #{inspect state}"
+		IO.puts "If state not defined in DB, set it 0"
+		{:ok , 0, @timeout}
+	end
+
+	init_sgs state: state, nameproc: name do
+		IO.puts "HELLO, #{name}!"
+		IO.puts "Init state is #{inspect state}"
+		IO.puts "If state not defined in DB, set it 0"
+		{:ok , 0, @timeout}
+	end
 
 ```
