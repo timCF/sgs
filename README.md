@@ -7,7 +7,7 @@ Wrapper under ExActor.GenServer. It defines gen_server which keep its state on d
 	use Sgs.Macro
 ```
 
-And than define callbacks/api like in ExActor, but with some extra options. You can use pattern matching and guards where you want:
+And next define callbacks/api like in ExActor, but with some extra options. You can use pattern matching and guards where you want:
 
 ```elixir
 	init_sgs opts do
