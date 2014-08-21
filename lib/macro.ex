@@ -95,9 +95,10 @@ defmodule Sgs.Macro do
 		num
 	end
 
-	# cleanup reasons = [ term ], where term - any reason for terminate
+	# cleanup reasons = [ term | :normal | :unexpected | :never ], where term - any reason for terminate
 	# also term can be == :unexpected, it will cleanup state
-	# in case where terminate function was not called in previous session
+	# in case terminate function was not called in previous session
+	# if term == :never, state will never cleanup
 	defp make_cleanup_reasons( nil ) do
 		[ :normal ]
 	end
