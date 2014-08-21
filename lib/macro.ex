@@ -1,3 +1,5 @@
+
+
 defmodule Sgs.Macro do
 
 	defmacro __using__(_) do
@@ -70,37 +72,67 @@ defmodule Sgs.Macro do
 		end
 	end
 
-	defmacro init_state_macro(state, name) do
-		case state do
-			nil -> 	quote do end
-			_ -> 	quote do
-						unquote(state) = Exdk.get(unquote(name))
-					end
-		end
+
+	defp do_pattern_matching( argname, nil ) do
+		argname
+	end
+	defp do_pattern_matching( argname, val_to_match ) do
+		quote do unquote(argname) = unquote(val_to_match) end
 	end
 
+	defp make_guard( nil ) do
+		quote do true end
+	end
+	defp make_guard( expr ) do
+		expr
+	end
+
+	# cleanup delay =  integer | :infinity 
+	defp make_cleanup_delay( nil ) do
+		:infinity
+	end
+	defp make_cleanup_delay( num ) when is_integer(num) do
+		num
+	end
+
+	# cleanup reasons = [ term ], where term - any reason for terminate
+	# also term can be == :unexpected, it will cleanup state
+	# in case where terminate function was not called in previous session
+	defp make_cleanup_reasons( nil ) do
+		[ :normal ]
+	end
+	defp make_cleanup_reasons( lst ) when is_list(lst) do
+		lst
+	end
+	defp make_cleanup_reasons( some ) do
+		[ some ]
+	end
+
+	#
+	# TODO : daemon to cleanup
+	#
+
 	defmacro init_sgs(opts \\ [], [do: body]) do
-		case opts[:nameproc] do
-			nil ->
-				quote do
-					# notice, GS is named, name !!is atom!! 
-					definit(name) do 
-						:erlang.register(name, self())
-						init_state_macro(unquote(opts[:state]), name)
-						init_return( unquote(body), name )
-					end
+
+		__name__ = opts[:nameproc]
+		__state__ = opts[:state]
+		__guard__ = opts[:when]
+		__cleanup_delay__ = make_cleanup_delay( opts[:cleanup_delay] )
+		__cleanup_reasons__ = make_cleanup_reasons( opts[:cleanup_reasons] )
+
+		res = quote do
+
+				defp definit_body( 	unquote(do_pattern_matching( quote do __name__ end, __name__ )),
+									unquote(do_pattern_matching( quote do __state__ end, __state__)) ) when unquote(make_guard(__guard__)) do
+					:erlang.register(__name__, self())
+					init_return( unquote(body), __name__ )
 				end
-			nameproc ->
-				quote do
-					# notice, GS is named, name !!is atom!! 
-					definit(name) do 
-						:erlang.register(name, self())
-						unquote(nameproc) = name
-						init_state_macro(unquote(opts[:state]), name)
-						init_return( unquote(body), name )
-					end
-				end
-		end
+
+				# notice, GS is named, name !!is atom!! 
+				definit name, when: is_atom(name), do: ( definit_body( name, Exdk.get(name)) )
+			end
+		IO.puts Macro.to_string(res)
+		res
 	end
 
 	defmacro cast_sgs(funcdef, opts \\ [], [do: body]) do
@@ -176,7 +208,7 @@ defmodule Sgs.Macro do
 				end
 			end
 		end
-		IO.puts (Macro.to_string(res))
+		#IO.puts (Macro.to_string(res))
 		res
 	end
 
