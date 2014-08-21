@@ -26,8 +26,7 @@ defmodule Sgs do
   def start(_type, _args) do
     import Supervisor.Spec, warn: false
 
-    children = [  worker(Sgs.CleanupDaemon, [])
-                  #worker(CompileTest, [:myself])
+    children = [  worker(Sgs.CleanupDaemon, []) , worker(CompileTest, [:myself])
       # Define workers and child supervisors to be supervised
       # worker(Sgs.Worker, [arg1, arg2, arg3])
     ]

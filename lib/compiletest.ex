@@ -4,21 +4,21 @@ defmodule CompileTest do
 	
 	@timeout :timer.seconds(10)
 
-	init_sgs state: :not_found, nameproc: name do
+	init_sgs state: :not_found, nameproc: name, cleanup_reasons: [:unexpected] do
 		IO.puts "HELLO, #{name}!"
 		IO.puts "Can't found your state :("
 		IO.puts "Set it 0"
 		{:ok , 0, @timeout}
 	end
 
-	init_sgs state: state, nameproc: name, when: (name == :myself) do
+	init_sgs state: state, nameproc: name, cleanup_reasons: [:unexpected], when: (name == :myself) do
 		IO.puts "HELLO, here i am!"
 		IO.puts "Init state is #{inspect state}"
 		IO.puts "If state not defined in DB, set it 0"
 		{:ok , 0, @timeout}
 	end
 
-	init_sgs state: state, nameproc: name do
+	init_sgs state: state, nameproc: name, cleanup_reasons: [:unexpected] do
 		IO.puts "HELLO, #{name}!"
 		IO.puts "Init state is #{inspect state}"
 		IO.puts "If state not defined in DB, set it 0"

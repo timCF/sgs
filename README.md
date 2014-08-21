@@ -24,9 +24,12 @@ And than define callbacks/api like in ExActor, but with some extra options. You 
 		cleanup_delay: cleanup_delay, # it can be integer or :infinity. 
 		# When process is not alive, this value means timeout, after it reached - 
 		# state of process will be deleted (only in case where process not alive now).
+		# By default cleanup_delay == :infinity
 		cleanup_reasons: cleanup_reasons # here can be defined list of reasons of termination. 
-		# If process terminate with one of them - it state will delete immediately. 
+		# If process terminate with one of them - its state will be deleted immediately. 
 		# By default, cleanup_reasons == [:normal]
+		# In this list can be extra reason :unexpected - it means state cleanup in case of
+		# terminate function was not called in previous gen_server start.
 	]
 
 	# example :
@@ -38,7 +41,7 @@ And than define callbacks/api like in ExActor, but with some extra options. You 
 		{:ok , 0, @timeout}
 	end
 
-	init_sgs state: state, nameproc: name, when: (name == :myself) do
+	init_sgs state: state, nameproc: name, when: (name == :myself), cleanup_reasons: [:unexpected] do
 		IO.puts "HELLO, here i am!"
 		IO.puts "Init state is #{inspect state}"
 		IO.puts "If state not defined in DB, set it 0"

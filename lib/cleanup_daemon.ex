@@ -9,18 +9,19 @@ defmodule Sgs.CleanupDaemon do
 	definit do
 		case Exdk.get(@key) do
 			:not_found -> {:ok, %{}, @timeout}
-			state -> {:ok, cleanup_by_timestamp(state), @timeout}
+			state -> {:ok, cleanup(state), @timeout}
 		end
 	end
 
 	defcall send_init_signal( nameproc ), state: state do
-		case state[nameproc] do
-			nil -> {:reply, :ok, state, @timeout}
-			someinfo -> {	:reply,
-							:ok, 
-							do_cleanup_in_init(state, someinfo) |> cleanup_by_timestamp,
-							@timeout 	}
-		end
+
+		{	:reply,
+			:ok, 
+			( case state[nameproc] do
+				nil -> cleanup(state)
+				some -> do_force_cleanup_by_reason(state, some) |> cleanup
+			end ),
+			@timeout 	}
 	end
 
 	defcall send_terminate_reason( reason, nameproc ), state: state do
@@ -31,11 +32,11 @@ defmodule Sgs.CleanupDaemon do
 	end
 
 	defcast send_info( input = %Sgs.SgsInfo{} ), state: state do
-		{ :noreply, add_info(state, input) |> cleanup_by_timestamp, @timeout }
+		{ :noreply, add_info(state, input) |> cleanup, @timeout }
 	end
 
 	definfo :timeout, state: state do
-		{:noreply, cleanup_by_timestamp(state), @timeout}
+		{:noreply, cleanup(state), @timeout}
 	end
 
 	##############
@@ -43,13 +44,18 @@ defmodule Sgs.CleanupDaemon do
 	##############
 
 	#
+	#	cleanup
+	#
+
+	defp cleanup(state) do
+		Enum.reduce( Map.values(state), state, fn(val, res) -> do_cleanup_by_timestamp(res, val) |> do_cleanup_by_reason(val) end)
+	end
+
+	#
 	#	cleanup by timestamp
 	#
 
-	defp cleanup_by_timestamp( state ) do
-		Enum.reduce( Map.values(state), state, fn(val, res) -> do_cleanup_by_timestamp(res, val) end)
-	end
-	defp do_cleanup_by_timestamp( state, %Sgs.SgsInfo{ cleanup_delay: :infinity } )do
+	defp do_cleanup_by_timestamp( state, %Sgs.SgsInfo{ cleanup_delay: :infinity } ) do
 		# do nothing here, timestamp is not matter
 		state
 	end
@@ -70,19 +76,34 @@ defmodule Sgs.CleanupDaemon do
 
 
 	#
-	#	cleanup in init
+	#	 cleanup by reason
 	#
 
-	defp do_cleanup_in_init( state,	%Sgs.SgsInfo{ 
-				nameproc: nameproc,
-				cleanup_reasons: cleanup_reasons, 
-				terminate_was_called: false }) do
+	defp do_force_cleanup_by_reason( state,	%Sgs.SgsInfo{ 
+			nameproc: nameproc,
+			cleanup_reasons: cleanup_reasons, 
+			terminate_was_called: false }) do
+
 		case Enum.any?( cleanup_reasons, &(&1 == :unexpected) ) do
 			true -> cleanup_process(state, nameproc)
 			false -> state
 		end
+
 	end
-	defp do_cleanup_in_init( state, _ ) do
+
+	defp do_cleanup_by_reason( state,	%Sgs.SgsInfo{ 
+				nameproc: nameproc,
+				cleanup_reasons: cleanup_reasons, 
+				terminate_was_called: false }) do
+		case Enum.any?( cleanup_reasons, &(&1 == :unexpected) ) do
+			true -> case :erlang.whereis(nameproc) do
+						:undefined -> cleanup_process(state, nameproc)
+						_ -> state
+					end
+			false -> state
+		end
+	end
+	defp do_cleanup_by_reason( state, _ ) do
 		state
 	end
 
