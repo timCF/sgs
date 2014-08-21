@@ -37,29 +37,7 @@ defmodule CompileTest do
 		{:reply, state+10, state+10, @timeout}
 	end
 
-	info_sgs :timeout, state: some_state = 3 do
-		IO.inspect 3
-		IO.puts "timeout!"
-		IO.puts "auto increment of state: #{some_state+1}"
-		{:noreply, some_state+1, @timeout}
-	end
-
-	info_sgs :timeout, state: some_state = 2 do
-		IO.inspect 2
-		IO.puts "timeout!"
-		IO.puts "auto increment of state: #{some_state+1}"
-		{:noreply, some_state+1, @timeout}
-	end
-
-	info_sgs :timeout, state: some_state = 0 do
-		IO.inspect 0
-		IO.puts "timeout!"
-		IO.puts "auto increment of state: #{some_state+1}"
-		{:noreply, some_state+1, @timeout}
-	end
-
-	info_sgs :timeout, state: some_state = 1 do
-		IO.inspect 1
+	info_sgs :timeout, state: some_state do
 		IO.puts "timeout!"
 		IO.puts "auto increment of state: #{some_state+1}"
 		{:noreply, some_state+1, @timeout}

@@ -1,7 +1,7 @@
 Sgs
 ===
 
-Wrapper under ExActor.GenServer , it keep its state on disc (using ets). To use it, add :sgs to your deps and list of applications. Add this to target module
+Wrapper under ExActor.GenServer. It defines gen_server which keep its state on disc (using ets). To use it, add :sgs to your deps and list of applications. Add this to target module
 
 ```elixir
 	use Sgs.Macro
@@ -25,9 +25,11 @@ And than define callbacks/api like in ExActor, but with some extra options. You 
 		state: state, # access to state, if no state in storage, in becomes :not_found
 		when: when, # here you can define guard expression
 		cleanup_delay: cleanup_delay, # it can be integer or :infinity. 
-		# When process is not alive, this value means timeout, after it reached - state of process will be deleted (only in case where process not alive now).
+		# When process is not alive, this value means timeout, after it reached - 
+		# state of process will be deleted (only in case where process not alive now).
 		cleanup_reasons: cleanup_reasons # here can be defined list of reasons of termination. 
-		#If process terminate with one of them - it state will delete immediately. By default, cleanup_reasons == [:normal]
+		# If process terminate with one of them - it state will delete immediately. 
+		# By default, cleanup_reasons == [:normal]
 	]
 
 	example
@@ -53,4 +55,34 @@ And than define callbacks/api like in ExActor, but with some extra options. You 
 		{:ok , 0, @timeout}
 	end
 
+```
+
+In call_sgs, cast_sgs and info_sgs macro, you can use options: state, nameproc and when. Example
+
+```elixir
+	cast_sgs reset_state do
+		IO.puts "set state to 0"
+		{:noreply, 0, @timeout}
+	end
+
+	call_sgs add_to_state(arg1), when: arg1 >= 0, state: state do
+		IO.puts "args are:"
+		IO.inspect arg1
+		IO.puts "state now is #{state+10}"
+		{:reply, state+10, state+10, @timeout}
+	end
+
+	info_sgs :timeout, state: some_state do
+		IO.puts "timeout!"
+		IO.puts "auto increment of state: #{some_state+1}"
+		{:noreply, some_state+1, @timeout}
+	end
+```
+
+In terminate_sgs macro, you can use options: state, nameproc, when and reason. Example
+
+```elixir
+	terminate_sgs reason: reason, state: state do
+		IO.puts "Terminating becouse of reason #{inspect reason}, when state was #{inspect state}"
+	end
 ```
