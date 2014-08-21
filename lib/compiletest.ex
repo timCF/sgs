@@ -23,7 +23,7 @@ defmodule CompileTest do
 		{:noreply, 0, @timeout}
 	end
 
-	call_sgs add_to_state(arg1), state: state do
+	call_sgs add_to_state(arg1), when: arg1 >= 0, state: state do
 		IO.puts "args are:"
 		IO.inspect arg1
 		IO.puts "state now is #{state+10}"

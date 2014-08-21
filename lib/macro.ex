@@ -5,6 +5,7 @@ defmodule Sgs.Macro do
 	defmacro __using__(_) do
 		quote do 
 			use ExActor.GenServer
+			use Sgs
 			import Sgs.Macro
 
 			# init here
@@ -72,6 +73,151 @@ defmodule Sgs.Macro do
 		end
 	end
 
+	#
+	# TODO : daemon to cleanup
+	#
+
+	defmacro init_sgs(opts \\ [], [do: body]) do
+
+		__nameproc__ = opts[:nameproc]
+		__state__ = opts[:state]
+		__guard__ = opts[:when]
+		__cleanup_delay__ = make_cleanup_delay( opts[:cleanup_delay] )
+		__cleanup_reasons__ = make_cleanup_reasons( opts[:cleanup_reasons] )
+
+		# here we get struct with some pre-compiled field values
+		__sgsinfo__ = 	quote do
+							%Sgs.SgsInfo{
+							nameproc: nil,
+							timestamp: 0,
+							cleanup_delay: unquote(__cleanup_delay__), 
+	              			cleanup_reasons: unquote(__cleanup_reasons__),
+	              			terminate_was_called: false }
+              			end
+
+		quote do
+			# notice, GS is named, name !!is atom!! 
+			definit name, when: is_atom(name), do: ( definit_body( name, Exdk.get(name)) )
+
+			defp definit_body( 	unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ )),
+								unquote(do_pattern_matching( quote do __state__ end, __state__)) ) when unquote(make_guard(__guard__)) do
+				:erlang.register(__nameproc__, self())
+				# here do call - wait of cleanup if it's needed
+				Sgs.CleanupDaemon.send_init_signal( __nameproc__ )
+				# here do cast - just send some info
+				Sgs.CleanupDaemon.send_info( HashUtils.set( unquote(__sgsinfo__), [nameproc: __nameproc__, timestamp: makestamp ] ) )
+				# here we just do some work and init state if it necessary
+				init_return( unquote(body), __nameproc__ )
+			end
+		end
+	end
+
+	defmacro cast_sgs(funcdef, opts \\ [], [do: body]) do
+
+		__nameproc__ = opts[:nameproc]
+		__state__ = opts[:state]
+		__guard__ = opts[:when]
+
+		quoted_body = quote do
+			defp defcast_body( 	unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ )),
+								unquote(do_pattern_matching( quote do __state__ end, __state__)) ) when unquote(make_guard(__guard__)) do
+
+				cast_info_return(unquote(body), __nameproc__) # cast and info return values are the same
+			end
+		end
+		|> insert_user_args(funcdef)
+
+		quoted_func_call = quote do defcast_body( name, Exdk.get(name)) end |> insert_user_args_fo_func_call(funcdef)
+
+		quote do
+			defcast	unquote(funcdef), state: name do
+				unquote(quoted_func_call)
+			end
+			unquote(quoted_body)
+		end
+
+	end
+
+	defmacro call_sgs(funcdef, opts \\ [], [do: body]) do
+
+		__nameproc__ = opts[:nameproc]
+		__state__ = opts[:state]
+		__guard__ = opts[:when]
+
+		quoted_body = quote do
+			defp defcall_body( 	unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ )),
+								unquote(do_pattern_matching( quote do __state__ end, __state__)) ) when unquote(make_guard(__guard__)) do
+				call_return(unquote(body), __nameproc__)
+			end
+		end
+		|> insert_user_args(funcdef)
+
+		quoted_func_call = quote do defcall_body(name, Exdk.get(name)) end |> insert_user_args_fo_func_call(funcdef)
+
+		quote do
+			defcall	unquote(funcdef), state: name do
+				unquote(quoted_func_call)
+			end
+			unquote(quoted_body)
+		end
+
+	end
+
+	defmacro info_sgs(some, opts \\ [], [do: body]) do
+
+		__nameproc__ = opts[:nameproc]
+		__state__ = opts[:state]
+		__guard__ = opts[:when]
+
+
+		quote do
+
+			definfo	unquote(some), state: name do
+				definfo_body(name, Exdk.get(name), unquote(some))
+			end
+
+			defp definfo_body( 	unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ )),
+								unquote(do_pattern_matching( quote do __state__ end, __state__)),
+								unquote(some)   ) when unquote(make_guard(__guard__)) do
+				cast_info_return(unquote(body), __nameproc__) 
+			end
+
+		end 
+
+	end
+
+
+	defmacro terminate_sgs opts \\ [], [do: body] do
+
+		__nameproc__ = opts[:nameproc]
+		__state__ = opts[:state]
+		__guard__ = opts[:when]
+		__reason__ = opts[:reason]
+
+		quote do
+
+			def terminate( reason, nameproc ) do
+				terminate_body( nameproc, Exdk.get(nameproc), reason )
+			end
+
+			defp terminate_body( 	unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ )),
+									unquote(do_pattern_matching( quote do __state__ end, __state__)),
+									unquote(do_pattern_matching( quote do __reason__ end, __reason__))   ) when unquote(make_guard(__guard__)) do
+				unquote(body)
+				# call here, wait for cleanup if it need
+				Sgs.CleanupDaemon.send_terminate_reason( __reason__, __nameproc__ )
+			end
+
+		end
+	end
+
+	def cleanup_sgs(name) do
+		Exdk.delete(name)
+	end
+
+	###############
+	#### priv #####
+	###############
 
 	defp do_pattern_matching( argname, nil ) do
 		argname
@@ -87,7 +233,6 @@ defmodule Sgs.Macro do
 		expr
 	end
 
-	# cleanup delay =  integer | :infinity 
 	defp make_cleanup_delay( nil ) do
 		:infinity
 	end
@@ -95,10 +240,6 @@ defmodule Sgs.Macro do
 		num
 	end
 
-	# cleanup reasons = [ term | :normal | :unexpected | :never ], where term - any reason for terminate
-	# also term can be == :unexpected, it will cleanup state
-	# in case terminate function was not called in previous session
-	# if term == :never, state will never cleanup
 	defp make_cleanup_reasons( nil ) do
 		[ :normal ]
 	end
@@ -109,112 +250,33 @@ defmodule Sgs.Macro do
 		[ some ]
 	end
 
-	#
-	# TODO : daemon to cleanup
-	#
+	defp insert_user_args(quoted_defcast_body, {_, _, nil }) do
 
-	defmacro init_sgs(opts \\ [], [do: body]) do
+		quoted_defcast_body
 
-		__name__ = opts[:nameproc]
-		__state__ = opts[:state]
-		__guard__ = opts[:when]
-		__cleanup_delay__ = make_cleanup_delay( opts[:cleanup_delay] )
-		__cleanup_reasons__ = make_cleanup_reasons( opts[:cleanup_reasons] )
+		{ inner_info1, inner_info2 ,
+			[ {inner_info3, inner_info4, 
+				[ {inner_info5, inner_info6, arglist} | rest2 ]} | rest1 ] } = quoted_defcast_body
 
-		res = quote do
+	end
+	defp insert_user_args(quoted_defcast_body, {_, _, user_args }) do
 
-				defp definit_body( 	unquote(do_pattern_matching( quote do __name__ end, __name__ )),
-									unquote(do_pattern_matching( quote do __state__ end, __state__)) ) when unquote(make_guard(__guard__)) do
-					:erlang.register(__name__, self())
-					init_return( unquote(body), __name__ )
-				end
+		{ inner_info1, inner_info2 ,
+			[ {inner_info3, inner_info4, 
+				[ {inner_info5, inner_info6, arglist} | rest2 ]} | rest1 ] } = quoted_defcast_body
 
-				# notice, GS is named, name !!is atom!! 
-				definit name, when: is_atom(name), do: ( definit_body( name, Exdk.get(name)) )
-			end
-		IO.puts Macro.to_string(res)
-		res
+		{ inner_info1, inner_info2 ,
+			[ {inner_info3, inner_info4, 
+				[ {inner_info5, inner_info6, arglist++user_args} | rest2 ]} | rest1 ] } 
+
 	end
 
-	defmacro cast_sgs(funcdef, opts \\ [], [do: body]) do
-		case opts[:state] do
-			nil -> 
-				quote do
-					defcast	unquote(funcdef), state: name do
-						cast_info_return(unquote(body), name) # cast and info return values are the same
-					end
-				end
-			some_state ->
-				quote do
-					defcast	unquote(funcdef), state: name do
-						unquote(some_state) = Exdk.get(name) # bound state with variable, defined by user 
-						cast_info_return(unquote(body), name) # cast and info return values are the same
-					end
-				end
-		end
+	defp insert_user_args_fo_func_call( func_call, {_, _, nil }) do
+		func_call
 	end
 
-	defmacro call_sgs(funcdef, opts \\ [], [do: body]) do
-		case opts[:state] do
-			nil ->
-				quote do
-					defcall	unquote(funcdef), state: name do
-						call_return(unquote(body), name)
-					end
-				end
-			some_state ->
-				quote do
-					defcall	unquote(funcdef), state: name do
-						unquote(some_state) = Exdk.get(name) # bound state with variable, defined by user 
-						call_return(unquote(body), name)
-					end
-				end
-		end
-	end
-
-	defmacro info_sgs(some, opts \\ [], [do: body]) do
-		case opts[:state] do
-			nil ->
-				quote do
-					definfo	unquote(some), state: name do
-						cast_info_return(unquote(body), name) 
-					end
-				end 
-			some_state ->
-				quote do
-					definfo	unquote(some), state: name do
-						unquote(some_state) = Exdk.get(name) # bound state with variable, defined by user 
-						cast_info_return(unquote(body), name) 
-					end
-				end 
-		end
-	end
-
-	defmacro terminate_sgs opts \\ [], [do: body] do
-		terminator1 = case opts[:state] do
-						nil -> quote do end
-						some_state -> quote do unquote(some_state) = Exdk.get(nameproc) end
-					end
-		terminator2 = case opts[:reason] do
-						nil -> quote do end
-						some_reason -> quote do unquote(some_reason) = reason end
-					end
-		res = quote do
-			def terminate( reason, nameproc ) do
-				unquote(terminator1)
-				unquote(terminator2)
-				unquote(body)
-				if (reason == :normal) do
-					Exdk.delete(nameproc)
-				end
-			end
-		end
-		#IO.puts (Macro.to_string(res))
-		res
-	end
-
-	def cleanup_sgs(name) do
-		Exdk.delete(name)
+	defp insert_user_args_fo_func_call( {inner1, inner2, arglst}, {_, _, user_args }) do
+		{inner1, inner2, arglst++user_args}
 	end
 
 end

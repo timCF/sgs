@@ -26,8 +26,8 @@ defmodule Sgs.Mixfile do
   # Type `mix help deps` for more examples and options
   defp deps do
     [
-      #{:amnesia, github: "meh/amnesia"},
-            {:exdk, github: "timCF/exdk"},
+      {:hashex, github: "timCF/hashex"},
+      {:exdk, github: "timCF/exdk"},
       {:exactor, github: "sasa1977/exactor"}
     ]
   end
