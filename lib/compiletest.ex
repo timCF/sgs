@@ -25,10 +25,10 @@ defmodule CompileTest do
 		{:ok , 0, @timeout}
 	end
 
-	cast_sgs reset_state do
-		IO.puts "set state to 0"
-		{:noreply, 0, @timeout}
-	end
+	#cast_sgs reset_state do
+	#	IO.puts "set state to 0"
+	#	{:noreply, 0, @timeout}
+	#end
 
 	call_sgs add_to_state(arg1), when: arg1 >= 0, state: state do
 		IO.puts "args are:"

@@ -25,7 +25,10 @@ defmodule Sgs.Macro do
 			use Sgs
 			import Sgs.Macro
 
+			#
 			# init here
+			#
+
 			defp init_return( {:ok, state}, name ) do
 				if(Exdk.get(name) == :not_found) do
 					Exdk.put(name, state)
@@ -41,9 +44,27 @@ defmodule Sgs.Macro do
 			defp init_return( some_else, _name ) do
 				some_else
 			end
+			# force init_here
+			defp force_init_return( {:ok, state}, name ) do
+				if(Exdk.get(name) == :not_found) do
+					Exdk.putf(name, state)
+				end
+				{:ok, name}
+			end
+			defp force_init_return( {:ok, state, some}, name ) do
+				if(Exdk.get(name) == :not_found) do
+					Exdk.putf(name, state)
+				end
+				{:ok, name, some}
+			end
+			defp force_init_return( some_else, _name ) do
+				some_else
+			end
 
-
+			#
 			# cast and info here
+			#
+
 			defp cast_info_return( {:noreply, state}, name ) do
 				Exdk.put(name, state)
 				{:noreply, name}
@@ -56,9 +77,24 @@ defmodule Sgs.Macro do
 				Exdk.put(name, state)
 				{:stop, reason, name}
 			end
+			# force cast and info here
+			defp force_cast_info_return( {:noreply, state}, name ) do
+				Exdk.putf(name, state)
+				{:noreply, name}
+			end
+			defp force_cast_info_return( {:noreply, state, some}, name ) do
+				Exdk.putf(name, state)
+				{:noreply, name, some}
+			end
+			defp force_cast_info_return( {:stop, reason, state}, name ) do
+				Exdk.putf(name, state)
+				{:stop, reason, name}
+			end
 
+			#
+			# call here
+			#
 
-			#call here
 			defp call_return( {:reply, reply, state}, name ) do
 				Exdk.put(name, state)
 				{:reply, reply, name}
@@ -83,6 +119,31 @@ defmodule Sgs.Macro do
 				Exdk.put(name, state)
 				{:stop, reason, name}
 			end
+			# force call here
+			defp force_call_return( {:reply, reply, state}, name ) do
+				Exdk.putf(name, state)
+				{:reply, reply, name}
+			end
+			defp force_call_return( {:reply, reply, state, some}, name ) do
+				Exdk.putf(name, state)
+				{:reply, reply, name, some}
+			end
+			defp force_call_return( {:noreply, state}, name ) do
+				Exdk.putf(name, state)
+				{:noreply, name}
+			end
+			defp force_call_return( {:noreply, state, some}, name ) do
+				Exdk.putf(name, state)
+				{:noreply, name, some}
+			end
+			defp force_call_return( {:stop, reason, reply, state}, name ) do
+				Exdk.putf(name, state)
+				{:stop, reason, reply, name}
+			end
+			defp force_call_return( {:stop, reason, state}, name ) do
+				Exdk.putf(name, state)
+				{:stop, reason, name}
+			end
 
 			terminate_sgs [] do end
 			defoverridable [ terminate: 2 ]
@@ -99,8 +160,17 @@ defmodule Sgs.Macro do
 		__nameproc__ = opts[:nameproc]
 		__state__ = opts[:state]
 		__guard__ = opts[:when]
-		__cleanup_delay__ = make_cleanup_delay( opts[:cleanup_delay] )
-		__cleanup_reasons__ = make_cleanup_reasons( opts[:cleanup_reasons] )
+		__cleanup_delay__ = case opts[:cleanup_delay] do
+								nil -> :infinity
+								num when is_integer(num) -> num
+							end
+		__cleanup_reasons__ = case opts[:cleanup_reasons] do
+								nil -> [:normal]
+								lst when is_list(lst) -> lst
+								some -> [some]
+							end
+		__force_save__ = get_force_save_settings(opts[:force_save])
+
 
 		# here we get struct with some pre-compiled field values
 		__sgsinfo__ = 	quote do
@@ -112,16 +182,24 @@ defmodule Sgs.Macro do
 	              			terminate_was_called: false }
               			end
 
+        return_function = case __force_save__ do
+        							true -> quote do 
+												Sgs.CleanupDaemon.sync_send_info( HashUtils.set( unquote(__sgsinfo__), [nameproc: __nameproc__, timestamp: makestamp ] ) )
+        										force_init_return( unquote(body), __nameproc__ ) end
+        							false -> quote do 
+        										Sgs.CleanupDaemon.send_info( HashUtils.set( unquote(__sgsinfo__), [nameproc: __nameproc__, timestamp: makestamp ] ) )
+        										init_return( unquote(body), __nameproc__ )
+        									end
+        						end
+
         priv_function_body = quote do
 			defp definit_body( 	unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ )),
 								unquote(do_pattern_matching( quote do __state__ end, __state__)) ) when unquote(make_guard(__guard__)) do
 				:erlang.register(__nameproc__, self())
 				# here do call - wait of cleanup if it's needed
 				Sgs.CleanupDaemon.send_init_signal( __nameproc__ )
-				# here do cast - just send some info
-				Sgs.CleanupDaemon.send_info( HashUtils.set( unquote(__sgsinfo__), [nameproc: __nameproc__, timestamp: makestamp ] ) )
-				# here we just do some work and init state if it necessary
-				init_return( unquote(body), __nameproc__ )
+				# here do call or cast to cleanup daemon in case of force option == true or false
+				unquote(return_function)
 			end
 		end
 
@@ -137,16 +215,20 @@ defmodule Sgs.Macro do
 
 	defmacro cast_sgs(funcdef, opts \\ [], [do: body]) do
 
-
 		__nameproc__ = opts[:nameproc]
 		__state__ = opts[:state]
 		__guard__ = opts[:when]
+		__force_save__ = get_force_save_settings(opts[:force_save])
+
+		return_function = case __force_save__ do
+							true -> quote do force_cast_info_return(unquote(body), __nameproc__) end
+							false -> quote do cast_info_return(unquote(body), __nameproc__) end
+						end
 
 		priv_function_body = quote do
 			defp defcast_body( 	unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ )),
 								unquote(do_pattern_matching( quote do __state__ end, __state__)) ) when unquote(make_guard(__guard__)) do
-
-				cast_info_return(unquote(body), __nameproc__) # cast and info return values are the same
+				unquote(return_function)
 			end
 		end |> insert_user_args(funcdef)
 
@@ -163,15 +245,20 @@ defmodule Sgs.Macro do
 
 	defmacro call_sgs(funcdef, opts \\ [], [do: body]) do
 
-
 		__nameproc__ = opts[:nameproc]
 		__state__ = opts[:state]
 		__guard__ = opts[:when]
+		__force_save__ = get_force_save_settings(opts[:force_save])
+
+		return_function = case __force_save__ do
+							true -> quote do force_call_return(unquote(body), __nameproc__) end
+							false -> quote do call_return(unquote(body), __nameproc__) end
+						end
 
 		priv_function_body = quote do
 			defp defcall_body( 	unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ )),
 								unquote(do_pattern_matching( quote do __state__ end, __state__)) ) when unquote(make_guard(__guard__)) do
-				call_return(unquote(body), __nameproc__)
+				unquote(return_function)
 			end
 		end |> insert_user_args(funcdef)
 
@@ -191,12 +278,18 @@ defmodule Sgs.Macro do
 		__nameproc__ = opts[:nameproc]
 		__state__ = opts[:state]
 		__guard__ = opts[:when]
+		__force_save__ = get_force_save_settings(opts[:force_save])
+
+		return_function = case __force_save__ do
+							true -> quote do force_cast_info_return(unquote(body), __nameproc__) end
+							false -> quote do cast_info_return(unquote(body), __nameproc__) end
+						end
 
 		priv_function_body = quote do
 			defp definfo_body( 	unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ )),
 								unquote(do_pattern_matching( quote do __state__ end, __state__)),
 								unquote(some)   ) when unquote(make_guard(__guard__)) do
-				cast_info_return(unquote(body), __nameproc__) 
+				unquote(return_function)
 			end
 		end
 
@@ -216,6 +309,12 @@ defmodule Sgs.Macro do
 		__state__ = opts[:state]
 		__guard__ = opts[:when]
 		__reason__ = opts[:reason]
+		__force_save__ = get_force_save_settings(opts[:force_save])
+
+		call_to_daemon = case __force_save__ do
+							true -> quote do Sgs.CleanupDaemon.send_terminate_reason_force( __reason__, __nameproc__ ) end
+							false -> quote do Sgs.CleanupDaemon.send_terminate_reason( __reason__, __nameproc__ ) end
+						end
 
 		priv_function_body = quote do
 			defp terminate_body( 	unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ )),
@@ -223,7 +322,7 @@ defmodule Sgs.Macro do
 									unquote(do_pattern_matching( quote do __reason__ end, __reason__))   ) when unquote(make_guard(__guard__)) do
 				unquote(body)
 				# call here, wait for cleanup if it need
-				Sgs.CleanupDaemon.send_terminate_reason( __reason__, __nameproc__ )
+				unquote(call_to_daemon)
 			end
 		end
 
@@ -258,6 +357,13 @@ defmodule Sgs.Macro do
 	#### priv #####
 	###############
 
+	defp get_force_save_settings( nil ) do
+		false
+	end
+	defp get_force_save_settings( some ) when is_boolean( some ) do
+		some
+	end
+
 	defp do_pattern_matching( argname, nil ) do
 		argname
 	end
@@ -270,23 +376,6 @@ defmodule Sgs.Macro do
 	end
 	defp make_guard( expr ) do
 		expr
-	end
-
-	defp make_cleanup_delay( nil ) do
-		:infinity
-	end
-	defp make_cleanup_delay( num ) when is_integer(num) do
-		num
-	end
-
-	defp make_cleanup_reasons( nil ) do
-		[ :normal ]
-	end
-	defp make_cleanup_reasons( lst ) when is_list(lst) do
-		lst
-	end
-	defp make_cleanup_reasons( some ) do
-		[ some ]
 	end
 
 	defp insert_user_args(quoted_defcast_body, {_, _, nil }) do

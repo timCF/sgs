@@ -25,11 +25,15 @@ And next define callbacks/api like in ExActor, but with some extra options. You 
 		# When process is not alive, this value means timeout, after it reached - 
 		# state of process will be deleted (only in case where process not alive now).
 		# By default cleanup_delay == :infinity
-		cleanup_reasons: cleanup_reasons # here can be defined list of reasons of termination. 
+		cleanup_reasons: cleanup_reasons, # here can be defined list of reasons of termination. 
 		# If process terminate with one of them - its state will be deleted immediately. 
 		# By default, cleanup_reasons == [:normal]
 		# In this list can be extra reason :unexpected - it means state cleanup in case of
 		# terminate function was not called in previous gen_server start.
+		force_save: force_save # flag (true/false). If it true - value of state
+		# will be saved immediately after callback function returns value
+		# if it false - state save every 10 sec, or more often (for example if
+		# other SGS use this flag == true). By default force_save == false
 	]
 
 	# example :
@@ -57,7 +61,7 @@ And next define callbacks/api like in ExActor, but with some extra options. You 
 
 ```
 
-In call_sgs, cast_sgs and info_sgs macro, you can use options: state, nameproc and when. Example :
+In call_sgs, cast_sgs and info_sgs macro, you can use options: state, nameproc, force_save and when. Example :
 
 ```elixir
 	cast_sgs reset_state do
@@ -65,7 +69,7 @@ In call_sgs, cast_sgs and info_sgs macro, you can use options: state, nameproc a
 		{:noreply, 0, @timeout}
 	end
 
-	call_sgs add_to_state(arg1), when: arg1 >= 0, state: state do
+	call_sgs add_to_state(arg1), when: arg1 >= 0, force_save: true, state: state do
 		IO.puts "args are:"
 		IO.inspect arg1
 		IO.puts "state now is #{state+10}"
@@ -79,7 +83,7 @@ In call_sgs, cast_sgs and info_sgs macro, you can use options: state, nameproc a
 	end
 ```
 
-In terminate_sgs macro, you can use options: state, nameproc, when and reason. Example :
+In terminate_sgs macro, you can use options: state, nameproc, force_save, when and reason. Example :
 
 ```elixir
 	terminate_sgs reason: reason, state: state do

@@ -31,6 +31,17 @@ defmodule Sgs.CleanupDaemon do
 		end
 	end
 
+	defcall send_terminate_reason_force( reason, nameproc ), state: state do
+		case HashUtils.get( state, [nameproc, :cleanup_reasons] ) |> Enum.any?( &(&1 == reason) ) do
+			true -> {:reply, :ok, cleanup_process(state, nameproc) |> force_save_state , @timeout }
+			false -> {:reply, :ok, HashUtils.set( state, [nameproc, :terminate_was_called], true ) |> force_save_state, @timeout}
+		end
+	end
+
+	defcall sync_send_info( input = %Sgs.SgsInfo{} ), state: state do
+		{ :reply, :ok, add_info(state, input) |> cleanup, @timeout }
+	end
+
 	defcast send_info( input = %Sgs.SgsInfo{} ), state: state do
 		{ :noreply, add_info(state, input) |> cleanup, @timeout }
 	end
@@ -113,6 +124,11 @@ defmodule Sgs.CleanupDaemon do
 
 	defp save_state state do
 		Exdk.put(state)
+		state
+	end
+
+	defp force_save_state state do
+		Exdk.putf(state)
 		state
 	end
 
