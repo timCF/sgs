@@ -123,12 +123,12 @@ defmodule Sgs.CleanupDaemon do
 	##########################################
 
 	defp save_state state do
-		Exdk.put(state)
+		Exdk.put( @key, state)
 		state
 	end
 
 	defp force_save_state state do
-		Exdk.putf(state)
+		Exdk.putf( @key, state)
 		state
 	end
 
