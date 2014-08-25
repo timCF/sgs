@@ -101,6 +101,9 @@ defmodule Sgs.CleanupDaemon do
 		end
 
 	end
+	defp do_force_cleanup_by_reason( state,	%Sgs.SgsInfo{} ) do
+		state
+	end
 
 	defp do_cleanup_by_reason( state,	%Sgs.SgsInfo{ 
 				nameproc: nameproc,
