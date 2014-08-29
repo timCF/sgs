@@ -1,39 +1,29 @@
 defmodule SgsTest do
   use ExUnit.Case
 
-	defmodule StorageTest do
+	@daemon :__sgs_cleanup_daemon_state__
 
-		use Sgs.Macro
-		
-		@timeout :timer.seconds(10)
-
-		init_sgs state: state = %{nameproc: name, state: num}, nameproc: name, cleanup_reasons: [:my_reason, :normal] do
-			{:ok , state}
-		end
-		init_sgs state: :not_found, nameproc: :my_name, cleanup_reasons: [:my_reason, :normal] do
-			{:ok , %{nameproc: :my_name, state: 1}}
-		end
-		init_sgs state: :not_found, nameproc: name, cleanup_reasons: [:my_reason, :normal] do
-			{:ok , %{nameproc: name, state: 0}}
-		end
-
-		call_sgs kill(reason), state: state = %{} do
-			{:stop, reason, true, state}
-		end
-		call_sgs get_state, state: state = %{} do
-			{:reply, state, state}
-		end
-
-		def test do
-			:supervisor.start_child Sgs.Supervisor, Supervisor.Spec.worker(Sgs.CompileTest, [:my_name], [id: :my_name,  restart: :transient])
-			results = [Exdk.get(:my_name)==%{nameproc: :my_name, state: 0}]
-			results = results++[Sgs.CompileTest.kill(:my_reason)]
-		end
-	end
-
-	test "the truth" do
-		:supervisor.start_child Sgs.Supervisor, Supervisor.Spec.worker(Sgs.CompileTest, [:my_name], [id: :my_name,  restart: :transient])
+	test "init, cleanup" do
+		:supervisor.start_child Sgs.Supervisor, Supervisor.Spec.worker(GS1, [:my_name], [id: :my_name,  restart: :transient])
 		assert :erlang.whereis(:my_name) != :undefined
+		assert Exdk.get(:my_name) == %{nameproc: :my_name, state: 1}
+		assert GS1.get_state(:my_name) == %{nameproc: :my_name, state: 1}
+		:timer.sleep(2000) # here we wait because force_save flag == false in this gs
+		%{my_name: %Sgs.SgsInfo{nameproc: :my_name,timestamp: timestamp,cleanup_delay: :infinity }} = Exdk.get(@daemon)
+		assert is_integer(timestamp)
+		assert GS1.kill(:my_name, :normal)
+		:timer.sleep(2000)
+		assert Exdk.get(:my_name) == :not_found
+		assert :erlang.whereis(:my_name) == :undefined
+		assert Exdk.get(@daemon) == %{}
+
+		:supervisor.restart_child Sgs.Supervisor, :my_name
+		assert :erlang.whereis(:my_name) != :undefined
+		assert GS1.kill(:my_name, :my_reason)
+		:timer.sleep(2000)
+		assert Exdk.get(:my_name) == :not_found
+		assert :erlang.whereis(:my_name) == :undefined
 	end
-  
+
+
 end
