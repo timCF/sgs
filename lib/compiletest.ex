@@ -4,9 +4,8 @@ defmodule GS1 do
 	
 	@timeout :timer.seconds(10)
 
-	init_sgs state: state = %{nameproc: name, state: num}, nameproc: name, cleanup_reasons: [:my_reason, :normal] do
-		IO.puts "HELLO"
-		{:ok , state}
+	init_sgs state: :not_found, nameproc: :some_other_name, cleanup_reasons: [:my_reason, :normal] do
+		{:ok , %{nameproc: :some_other_name, state: 2}}
 	end
 	init_sgs state: :not_found, nameproc: :my_name, cleanup_reasons: [:my_reason, :normal] do
 		{:ok , %{nameproc: :my_name, state: 1}}
