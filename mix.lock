@@ -1,6 +1,6 @@
 %{"amnesia": {:git, "git://github.com/meh/amnesia.git", "a5b2862516769cc569ccc30704f62eefc938ef11", []},
   "continuum": {:git, "git://github.com/meh/continuum.git", "9cbc6e4a6f8e92230d8b77c42a2f1ca02840ec44", []},
   "exactor": {:git, "git://github.com/sasa1977/exactor.git", "65a2cef190d2bd654d08c6f9ea49c8533bc432f6", []},
-  "exdk": {:git, "git://github.com/timCF/exdk.git", "1706895cf7e79ba99772213d9e24d2e157d9760a", []},
+  "exdk": {:git, "git://github.com/timCF/exdk.git", "1a306b58a51284edffc6664adccd3a0976d389bb", []},
   "exquisite": {:package, "0.1.2"},
   "hashex": {:git, "git://github.com/timCF/hashex.git", "5ae78d6b532941439622547cb16571e5f760a9a8", []}}
