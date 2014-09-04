@@ -219,6 +219,7 @@ defmodule Sgs.Macro do
 		__state__ = opts[:state]
 		__guard__ = opts[:when]
 		__force_save__ = get_force_save_settings(opts[:force_save])
+		{__funcname__, _, _} = funcdef
 
 		return_function = case __force_save__ do
 							true -> quote do force_cast_info_return(unquote(body), __nameproc__) end
@@ -226,13 +227,14 @@ defmodule Sgs.Macro do
 						end
 
 		priv_function_body = quote do
-			defp defcast_body( 	unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ )),
+			defp defcast_body( 	unquote(__funcname__),
+								unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ )),
 								unquote(do_pattern_matching( quote do __state__ end, __state__)) ) when unquote(make_guard(__guard__)) do
 				unquote(return_function)
 			end
 		end |> insert_user_args(funcdef)
 
-		quoted_func_call = quote do defcast_body( name, Exdk.get(name)) end |> insert_user_args_fo_func_call(funcdef)
+		quoted_func_call = quote do defcast_body( unquote(__funcname__), name, Exdk.get(name)) end |> insert_user_args_fo_func_call(funcdef)
 
         send :pg2.get_members("priv_funcs_writer")
 				|> List.first, %{quoted_to_append: priv_function_body}
@@ -252,6 +254,7 @@ defmodule Sgs.Macro do
 		__state__ = opts[:state]
 		__guard__ = opts[:when]
 		__force_save__ = get_force_save_settings(opts[:force_save])
+		{__funcname__, _, _} = funcdef
 
 		return_function = case __force_save__ do
 							true -> quote do force_call_return(unquote(body), __nameproc__) end
@@ -259,13 +262,14 @@ defmodule Sgs.Macro do
 						end
 
 		priv_function_body = quote do
-			defp defcall_body( 	unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ )),
+			defp defcall_body( 	unquote(__funcname__),
+								unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ )),
 								unquote(do_pattern_matching( quote do __state__ end, __state__)) ) when unquote(make_guard(__guard__)) do
 				unquote(return_function)
 			end
 		end |> insert_user_args(funcdef)
 
-		quoted_func_call = quote do defcall_body(name, Exdk.get(name)) end |> insert_user_args_fo_func_call(funcdef)
+		quoted_func_call = quote do defcall_body( unquote(__funcname__), name, Exdk.get(name)) end |> insert_user_args_fo_func_call(funcdef)
         send :pg2.get_members("priv_funcs_writer")
 				|> List.first, %{quoted_to_append: priv_function_body}
 
@@ -354,7 +358,7 @@ defmodule Sgs.Macro do
 											 quote do unquote(collected) end
 		end
 	
-		IO.puts Macro.to_string(res)
+		#IO.puts Macro.to_string(res)
 	
 		res
 	
