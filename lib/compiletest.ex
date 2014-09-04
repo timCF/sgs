@@ -22,4 +22,6 @@ defmodule GS1 do
 		{:stop, reason, true, state}
 	end
 
+	end_sgs
+
 end

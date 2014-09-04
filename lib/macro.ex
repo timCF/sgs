@@ -2,23 +2,23 @@
 
 defmodule Sgs.Macro do
 
-	#def priv_funcs_writer collected \\ (quote do end) do
-	#	receive do
-	#		%{ quoted_to_append: incoming } -> 	priv_funcs_writer( quote do  
-	#														unquote(collected)
-	#														unquote(incoming)
-	#													end )
-	#		%{ give_result_to: pid } -> send( pid, %{ quoted_result: collected } )
-	#									:pg2.leave( "priv_funcs_writer", self )
-	#	end
-	#end
+	def priv_funcs_writer collected \\ (quote do end) do
+		receive do
+			%{ quoted_to_append: incoming } -> 	priv_funcs_writer( quote do  
+															unquote(collected)
+															unquote(incoming)
+														end )
+			%{ give_result_to: pid } -> send( pid, %{ quoted_result: collected } )
+										:pg2.leave( "priv_funcs_writer", self )
+		end
+	end
 
 	defmacro __using__(_) do
 
-		#:pg2.create "priv_funcs_writer"
-		#
-		#pid = spawn_link( Sgs.Macro, :priv_funcs_writer, [quote do end] )
-		#:pg2.join( "priv_funcs_writer", pid )
+		:pg2.create "priv_funcs_writer"
+		
+		pid = spawn_link( Sgs.Macro, :priv_funcs_writer, [quote do end] )
+		:pg2.join( "priv_funcs_writer", pid )
 
 		quote do 
 			use ExActor.GenServer
@@ -203,13 +203,13 @@ defmodule Sgs.Macro do
 			end
 		end
 
-        #send :pg2.get_members("priv_funcs_writer")
-		#		|> List.first, %{quoted_to_append: priv_function_body}
+        send :pg2.get_members("priv_funcs_writer")
+				|> List.first, %{quoted_to_append: priv_function_body}
 
 		quote do
 			# notice, GS is named, name !!is atom!! 
 			definit name, when: is_atom(name), do: ( definit_body( name, Exdk.get(name)) )
-			unquote(priv_function_body)
+			#unquote(priv_function_body)
 		end
 	end
 
@@ -234,11 +234,14 @@ defmodule Sgs.Macro do
 
 		quoted_func_call = quote do defcast_body( name, Exdk.get(name)) end |> insert_user_args_fo_func_call(funcdef)
 
+        send :pg2.get_members("priv_funcs_writer")
+				|> List.first, %{quoted_to_append: priv_function_body}
+
 		quote do
 			defcast	unquote(funcdef), state: name do
 				unquote(quoted_func_call)
 			end
-			unquote(priv_function_body)
+			#unquote(priv_function_body)
 		end
 
 	end
@@ -263,12 +266,14 @@ defmodule Sgs.Macro do
 		end |> insert_user_args(funcdef)
 
 		quoted_func_call = quote do defcall_body(name, Exdk.get(name)) end |> insert_user_args_fo_func_call(funcdef)
+        send :pg2.get_members("priv_funcs_writer")
+				|> List.first, %{quoted_to_append: priv_function_body}
 
 		quote do
 			defcall	unquote(funcdef), state: name do
 				unquote(quoted_func_call)
 			end
-			unquote(priv_function_body)
+			#unquote(priv_function_body)
 		end
 
 	end
@@ -293,11 +298,14 @@ defmodule Sgs.Macro do
 			end
 		end
 
+        send :pg2.get_members("priv_funcs_writer")
+				|> List.first, %{quoted_to_append: priv_function_body}
+
 		quote do
 			definfo	unquote(some), state: name do
 				definfo_body(name, Exdk.get(name), unquote(some))
 			end
-			unquote(priv_function_body)
+			#unquote(priv_function_body)
 		end 
 
 	end
@@ -326,28 +334,31 @@ defmodule Sgs.Macro do
 			end
 		end
 
+        send :pg2.get_members("priv_funcs_writer")
+				|> List.first, %{quoted_to_append: priv_function_body}
+
 		quote do
 			def terminate( reason, nameproc ) do
 				terminate_body( nameproc, Exdk.get(nameproc), reason )
 			end
-			unquote(priv_function_body)
+			#unquote(priv_function_body)
 		end
 	end
 
-	#defmacro end_compilation do
-	#	send :pg2.get_members("priv_funcs_writer")
-	#			|> List.first, %{ give_result_to: self }
-	#	
-	#	res = receive do
-	#		%{ quoted_result: collected } -> :pg2.delete("priv_funcs_writer")
-	#										 quote do unquote(collected) end
-	#	end
-	#
-	#	IO.puts Macro.to_string(res)
-	#
-	#	res
-	#
-	#end
+	defmacro end_sgs do
+		send :pg2.get_members("priv_funcs_writer")
+				|> List.first, %{ give_result_to: self }
+		
+		res = receive do
+			%{ quoted_result: collected } -> :pg2.delete("priv_funcs_writer")
+											 quote do unquote(collected) end
+		end
+	
+		IO.puts Macro.to_string(res)
+	
+		res
+	
+	end
 
 	def cleanup_sgs(name) do
 		Exdk.delete(name)
