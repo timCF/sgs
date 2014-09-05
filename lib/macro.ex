@@ -165,7 +165,7 @@ defmodule Sgs.Macro do
 								num when is_integer(num) -> num
 							end
 		__cleanup_reasons__ = case opts[:cleanup_reasons] do
-								nil -> [:normal]
+								nil -> []
 								lst when is_list(lst) -> lst
 								some -> [some]
 							end

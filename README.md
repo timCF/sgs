@@ -27,7 +27,7 @@ And next define callbacks/api like in ExActor, but with some extra options. You 
 		# By default cleanup_delay == :infinity
 		cleanup_reasons: cleanup_reasons, # here can be defined list of reasons of termination. 
 		# If process terminate with one of them - its state will be deleted immediately. 
-		# By default, cleanup_reasons == [:normal]
+		# By default, cleanup_reasons == []
 		# In this list can be extra reason :unexpected - it means state cleanup in case of
 		# terminate function was not called in previous gen_server start.
 		force_save: force_save # flag (true/false). If it true - value of state
