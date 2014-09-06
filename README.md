@@ -90,3 +90,13 @@ In terminate_sgs macro, you can use options: state, nameproc, force_save, when a
 		IO.puts "Terminating becouse of reason #{inspect reason}, when state was #{inspect state}"
 	end
 ```
+
+If you want, you also can use additional, not-otp based macro from this module. It named reserve_sgs, and yes, it means that I add it to do reserve copy of state before return from callback, but you can use it any way you want. Example:
+
+```elixir
+	reserve_sgs nameproc: name, state: state, when: is_binary(state), change_state: false do
+		prepare_sql_query(state) |> SQL.execute
+	end
+```
+
+change_state option says will do-end block here affect to state or not

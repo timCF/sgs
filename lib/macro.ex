@@ -31,32 +31,43 @@ defmodule Sgs.Macro do
 
 			defp init_return( {:ok, state}, name ) do
 				if(Exdk.get(name) == :not_found) do
-					Exdk.put(name, state)
+					Exdk.put(name, state |> __reserve_save_state__(name))
 				end
 				{:ok, name}
 			end
 			defp init_return( {:ok, state, some}, name ) do
 				if(Exdk.get(name) == :not_found) do
-					Exdk.put(name, state)
+					Exdk.put(name, state |> __reserve_save_state__(name))
 				end
 				{:ok, name, some}
 			end
+
+			#
+			# TODO: fix it!!!
+			#
+
 			defp init_return( some_else, _name ) do
 				some_else
 			end
 			# force init_here
 			defp force_init_return( {:ok, state}, name ) do
 				if(Exdk.get(name) == :not_found) do
-					Exdk.putf(name, state)
+					Exdk.putf(name, state |> __reserve_save_state__(name))
 				end
 				{:ok, name}
 			end
 			defp force_init_return( {:ok, state, some}, name ) do
 				if(Exdk.get(name) == :not_found) do
-					Exdk.putf(name, state)
+					Exdk.putf(name, state |> __reserve_save_state__(name))
 				end
 				{:ok, name, some}
 			end
+
+			#
+			# TODO : fix it!
+			#
+
+
 			defp force_init_return( some_else, _name ) do
 				some_else
 			end
@@ -66,28 +77,28 @@ defmodule Sgs.Macro do
 			#
 
 			defp cast_info_return( {:noreply, state}, name ) do
-				Exdk.put(name, state)
+				Exdk.put(name, state |> __reserve_save_state__(name))
 				{:noreply, name}
 			end
 			defp cast_info_return( {:noreply, state, some}, name ) do
-				Exdk.put(name, state)
+				Exdk.put(name, state |> __reserve_save_state__(name))
 				{:noreply, name, some}
 			end
 			defp cast_info_return( {:stop, reason, state}, name ) do
-				Exdk.put(name, state)
+				Exdk.put(name, state |> __reserve_save_state__(name))
 				{:stop, reason, name}
 			end
 			# force cast and info here
 			defp force_cast_info_return( {:noreply, state}, name ) do
-				Exdk.putf(name, state)
+				Exdk.putf(name, state |> __reserve_save_state__(name))
 				{:noreply, name}
 			end
 			defp force_cast_info_return( {:noreply, state, some}, name ) do
-				Exdk.putf(name, state)
+				Exdk.putf(name, state |> __reserve_save_state__(name))
 				{:noreply, name, some}
 			end
 			defp force_cast_info_return( {:stop, reason, state}, name ) do
-				Exdk.putf(name, state)
+				Exdk.putf(name, state |> __reserve_save_state__(name))
 				{:stop, reason, name}
 			end
 
@@ -96,64 +107,104 @@ defmodule Sgs.Macro do
 			#
 
 			defp call_return( {:reply, reply, state}, name ) do
-				Exdk.put(name, state)
+				Exdk.put(name, state |> __reserve_save_state__(name))
 				{:reply, reply, name}
 			end
 			defp call_return( {:reply, reply, state, some}, name ) do
-				Exdk.put(name, state)
+				Exdk.put(name, state |> __reserve_save_state__(name))
 				{:reply, reply, name, some}
 			end
 			defp call_return( {:noreply, state}, name ) do
-				Exdk.put(name, state)
+				Exdk.put(name, state |> __reserve_save_state__(name))
 				{:noreply, name}
 			end
 			defp call_return( {:noreply, state, some}, name ) do
-				Exdk.put(name, state)
+				Exdk.put(name, state |> __reserve_save_state__(name))
 				{:noreply, name, some}
 			end
 			defp call_return( {:stop, reason, reply, state}, name ) do
-				Exdk.put(name, state)
+				Exdk.put(name, state |> __reserve_save_state__(name))
 				{:stop, reason, reply, name}
 			end
 			defp call_return( {:stop, reason, state}, name ) do
-				Exdk.put(name, state)
+				Exdk.put(name, state |> __reserve_save_state__(name))
 				{:stop, reason, name}
 			end
 			# force call here
 			defp force_call_return( {:reply, reply, state}, name ) do
-				Exdk.putf(name, state)
+				Exdk.putf(name, state |> __reserve_save_state__(name))
 				{:reply, reply, name}
 			end
 			defp force_call_return( {:reply, reply, state, some}, name ) do
-				Exdk.putf(name, state)
+				Exdk.putf(name, state |> __reserve_save_state__(name))
 				{:reply, reply, name, some}
 			end
 			defp force_call_return( {:noreply, state}, name ) do
-				Exdk.putf(name, state)
+				Exdk.putf(name, state |> __reserve_save_state__(name))
 				{:noreply, name}
 			end
 			defp force_call_return( {:noreply, state, some}, name ) do
-				Exdk.putf(name, state)
+				Exdk.putf(name, state |> __reserve_save_state__(name))
 				{:noreply, name, some}
 			end
 			defp force_call_return( {:stop, reason, reply, state}, name ) do
-				Exdk.putf(name, state)
+				Exdk.putf(name, state |> __reserve_save_state__(name))
 				{:stop, reason, reply, name}
 			end
 			defp force_call_return( {:stop, reason, state}, name ) do
-				Exdk.putf(name, state)
+				Exdk.putf(name, state |> __reserve_save_state__(name))
 				{:stop, reason, name}
 			end
 
+			# here we define terminator by default
+			def terminate( reason, nameproc ) do
+				terminate_body( nameproc, Exdk.get(nameproc), reason )
+			end
 			terminate_sgs [] do end
-			defoverridable [ terminate: 2 ]
+
+			# here we define reserve_save callback by default
+			defp __reserve_save_state__( state, nameproc ) do
+				reserve_save_state_body( state, nameproc )
+			end
+			defp reserve_save_state_body( state, nameproc ) do
+				state
+			end
 
 		end
 	end
 
-	#
-	# TODO : daemon to cleanup
-	#
+	# I mean use it for reserve copy, but you can use it any way you want
+	defmacro reserve_sgs(opts \\ [], [do: body]) do
+		__nameproc__ = opts[:nameproc]
+		__state__ = opts[:state]
+		__guard__ = opts[:when]
+		__change_state__ = case opts[:change_state] do
+							true -> true
+							false -> false
+							nil -> false
+						 end
+		if (__nameproc__ == nil or __state__ == nil) do
+			raise "You must define nameproc and state in reserve_sgs macro"
+		end
+
+		# maybe not body - here must be all func?
+		case __change_state__ do
+			true -> quote do
+						defp reserve_state_body( unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ )),
+												unquote(do_pattern_matching( quote do __state__ end, __state__)) ) when unquote(make_guard(__guard__)) do
+							unquote(body)
+						end
+					end
+			false -> quote do
+						defp reserve_state_body( unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ )),
+												unquote(do_pattern_matching( quote do __state__ end, __state__)) ) when unquote(make_guard(__guard__)) do
+							unquote(body)
+							__state__
+						end
+					end
+		end
+
+	end
 
 	defmacro init_sgs(opts \\ [], [do: body]) do
 
@@ -329,7 +380,7 @@ defmodule Sgs.Macro do
 							false -> quote do Sgs.CleanupDaemon.send_terminate_reason( __reason__, __nameproc__ ) end
 						end
 
-		priv_function_body = quote do
+		quote do
 			defp terminate_body( 	unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ )),
 									unquote(do_pattern_matching( quote do __state__ end, __state__)),
 									unquote(do_pattern_matching( quote do __reason__ end, __reason__))   ) when unquote(make_guard(__guard__)) do
@@ -342,12 +393,6 @@ defmodule Sgs.Macro do
         #send :pg2.get_members("priv_funcs_writer")
 		#		|> List.first, %{quoted_to_append: priv_function_body}
 
-		quote do
-			def terminate( reason, nameproc ) do
-				terminate_body( nameproc, Exdk.get(nameproc), reason )
-			end
-			unquote(priv_function_body)
-		end
 	end
 
 	#defmacro end_sgs do
