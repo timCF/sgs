@@ -30,15 +30,11 @@ defmodule Sgs.Macro do
 			#
 
 			defp init_return( {:ok, state}, name ) do
-				if(Exdk.get(name) == :not_found) do
-					Exdk.put(name, state |> __reserve_save_state__(name))
-				end
+				Exdk.put(name, state |> __reserve_save_state__(name))
 				{:ok, name}
 			end
 			defp init_return( {:ok, state, some}, name ) do
-				if(Exdk.get(name) == :not_found) do
-					Exdk.put(name, state |> __reserve_save_state__(name))
-				end
+				Exdk.put(name, state |> __reserve_save_state__(name))
 				{:ok, name, some}
 			end
 
@@ -51,15 +47,11 @@ defmodule Sgs.Macro do
 			end
 			# force init_here
 			defp force_init_return( {:ok, state}, name ) do
-				if(Exdk.get(name) == :not_found) do
-					Exdk.putf(name, state |> __reserve_save_state__(name))
-				end
+				Exdk.putf(name, state |> __reserve_save_state__(name))
 				{:ok, name}
 			end
 			defp force_init_return( {:ok, state, some}, name ) do
-				if(Exdk.get(name) == :not_found) do
-					Exdk.putf(name, state |> __reserve_save_state__(name))
-				end
+				Exdk.putf(name, state |> __reserve_save_state__(name))
 				{:ok, name, some}
 			end
 
@@ -161,14 +153,16 @@ defmodule Sgs.Macro do
 				terminate_body( nameproc, Exdk.get(nameproc), reason )
 			end
 			terminate_sgs [] do end
+			defoverridable [ terminate: 2 ]
 
 			# here we define reserve_save callback by default
 			defp __reserve_save_state__( state, nameproc ) do
-				reserve_save_state_body( state, nameproc )
+				reserve_state_body( state, nameproc )
 			end
-			defp reserve_save_state_body( state, nameproc ) do
+			defp reserve_state_body( state, nameproc ) do
 				state
 			end
+			defoverridable [ reserve_state_body: 2 ]
 
 		end
 	end
@@ -190,14 +184,14 @@ defmodule Sgs.Macro do
 		# maybe not body - here must be all func?
 		case __change_state__ do
 			true -> quote do
-						defp reserve_state_body( unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ )),
-												unquote(do_pattern_matching( quote do __state__ end, __state__)) ) when unquote(make_guard(__guard__)) do
+						defp reserve_state_body( 	unquote(do_pattern_matching( quote do __state__ end, __state__)),
+													unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ ))) when unquote(make_guard(__guard__)) do
 							unquote(body)
 						end
 					end
 			false -> quote do
-						defp reserve_state_body( unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ )),
-												unquote(do_pattern_matching( quote do __state__ end, __state__)) ) when unquote(make_guard(__guard__)) do
+						defp reserve_state_body( 	unquote(do_pattern_matching( quote do __state__ end, __state__)),
+													unquote(do_pattern_matching( quote do __nameproc__ end, __nameproc__ ))) when unquote(make_guard(__guard__)) do
 							unquote(body)
 							__state__
 						end

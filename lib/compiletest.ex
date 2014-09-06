@@ -21,6 +21,16 @@ defmodule GS1 do
 		{:stop, reason, true, state}
 	end
 
+	reserve_sgs nameproc: nameproc, state: state = %{nameproc: nameproc, state: 0} do
+		IO.puts "HELLO , #{inspect state}"
+	end
+	reserve_sgs nameproc: nameproc, state: state = %{nameproc: nameproc, state: 1} do
+		IO.puts "HELLO , #{inspect state}"
+	end
+	reserve_sgs nameproc: nameproc, state: state do
+		IO.puts "HI THERE, #{inspect state}"
+	end
+
 	#end_sgs
 
 end
