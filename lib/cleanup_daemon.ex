@@ -1,7 +1,6 @@
 defmodule Sgs.CleanupDaemon do
 	
 	use ExActor.GenServer, export: :SgsCleanupDaemon
-	use Sgs
 
 	@key :__sgs_cleanup_daemon_state__
 	@timeout :timer.seconds(1)
@@ -76,12 +75,12 @@ defmodule Sgs.CleanupDaemon do
 			cleanup_delay: cleanup_delay } ) do
 		case :erlang.whereis( nameproc ) do
 			# if process not alive - check delay and cleanup if need
-			:undefined -> case (makestamp - timestamp) > cleanup_delay do
+			:undefined -> case (Exutils.makestamp - timestamp) > cleanup_delay do
 							true -> cleanup_process(state, nameproc)
 							false -> state
 						end
 			# if process alive - set new timestamp
-			_ -> HashUtils.set( state, [nameproc, :timestamp], makestamp ) |> save_state
+			_ -> HashUtils.set( state, [nameproc, :timestamp], Exutils.makestamp ) |> save_state
 		end
 	end
 
@@ -145,6 +144,7 @@ defmodule Sgs.CleanupDaemon do
 		Exdk.delete( nameproc )
 		new_state = HashUtils.delete(state, nameproc)
 		Exdk.put( @key, new_state )
+		Sgs.AutoStartDaemon.delete_child(nameproc)
 		new_state
 	end
 

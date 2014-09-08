@@ -226,13 +226,23 @@ defmodule Sgs.Macro do
 	              			cleanup_reasons: unquote(__cleanup_reasons__),
 	              			terminate_was_called: false }
               			end
+        autostart_process = case opts[:autostart] do
+        						func when is_function(func,0) -> 
+        							case opts[:pg] do
+        								nil -> 	quote do Sgs.AutoStartDaemon.add_child(__nameproc__, unquote(func)) end
+        								pg -> quote do Sgs.AutoStartDaemon.add_child(__nameproc__, unquote(func), unquote(pg)) end
+        							end
+        						_ -> quote do end
+        					end
 
         return_function = case __force_save__ do
         							true -> quote do 
 												Sgs.CleanupDaemon.sync_send_info( HashUtils.set( unquote(__sgsinfo__), [nameproc: __nameproc__, timestamp: makestamp ] ) )
+        										unquote(autostart_process)
         										force_init_return( unquote(body), __nameproc__ ) end
         							false -> quote do 
         										Sgs.CleanupDaemon.send_info( HashUtils.set( unquote(__sgsinfo__), [nameproc: __nameproc__, timestamp: makestamp ] ) )
+        										unquote(autostart_process)
         										init_return( unquote(body), __nameproc__ )
         									end
         						end

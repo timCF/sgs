@@ -30,10 +30,18 @@ And next define callbacks/api like in ExActor, but with some extra options. You 
 		# By default, cleanup_reasons == []
 		# In this list can be extra reason :unexpected - it means state cleanup in case of
 		# terminate function was not called in previous gen_server start.
-		force_save: force_save # flag (true/false). If it true - value of state
+		force_save: force_save, # flag (true/false). If it true - value of state
 		# will be saved immediately after callback function returns value
 		# if it false - state save every 10 sec, or more often (for example if
 		# other SGS use this flag == true). By default force_save == false
+		pg: pg, # optionally you can define process group list for autostart. 
+		# groups will start one by one, just write Sgs.AutoStartDaemon.set_pglist(lst)
+		# where lst - list of pg names
+		autostart: func/0, # func with arity 0, I mean using it like
+		# fn() -> :supervisor.start_child AppName.Supervisor, Supervisor.Spec.worker(ModuleName, 
+		# [nameproc], [id: nameproc]) end
+		# it will start childs where you execute Sgs.AutoStartDaemon.start_childs/0
+		# when state is going to cleanup, name of process will delete from AutoStartDaemon
 	]
 
 	# example :

@@ -28,6 +28,8 @@ defmodule Sgs.Mixfile do
     [
       {:hashex, github: "timCF/hashex"},
       {:exdk, github: "timCF/exdk"},
+      {:exutils, github: "timCF/exutils"},
+
       {:exactor, github: "sasa1977/exactor"}
     ]
   end
