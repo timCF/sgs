@@ -227,10 +227,10 @@ defmodule Sgs.Macro do
 	              			terminate_was_called: false }
               			end
         autostart_process = case opts[:autostart] do
-        						func when is_function(func,0) -> 
+        						func when is_function(func,1) -> 
         							case opts[:pg] do
-        								nil -> 	quote do Sgs.AutoStartDaemon.add_child(__nameproc__, unquote(func)) end
-        								pg -> quote do Sgs.AutoStartDaemon.add_child(__nameproc__, unquote(func), unquote(pg)) end
+        								nil -> 	quote do Sgs.AutoStartDaemon.add_child(__nameproc__, fn() -> (unquote(func)).(__nameproc__) end ) end
+        								pg -> quote do Sgs.AutoStartDaemon.add_child(__nameproc__, fn() -> (unquote(func)).(__nameproc__) end, unquote(pg)) end
         							end
         						_ -> quote do end
         					end

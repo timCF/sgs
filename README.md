@@ -34,9 +34,9 @@ And next define callbacks/api like in ExActor, but with some extra options. You 
 		# will be saved immediately after callback function returns value
 		# if it false - state save every 10 sec, or more often (for example if
 		# other SGS use this flag == true). By default force_save == false
-		pg: pg, # optionally you can define process group list for autostart. 
-		autostart: func/0 # func with arity 0, I mean using it like
-		# fn() -> :supervisor.start_child AppName.Supervisor, Supervisor.Spec.worker(ModuleName, 
+		pg: pg, # optionally you can define process group for autostart. 
+		autostart: func/1 # func with arity 1, I mean it must look like:
+		# fn(nameproc) -> :supervisor.start_child AppName.Supervisor, Supervisor.Spec.worker(ModuleName, 
 		# [nameproc], [id: nameproc]) end
 		# it will start childs where you execute Sgs.AutoStartDaemon.start_childs/0
 		# when state is going to cleanup, name of process will delete from AutoStartDaemon
