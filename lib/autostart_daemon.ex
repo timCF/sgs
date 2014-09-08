@@ -38,17 +38,13 @@ defmodule Sgs.AutoStartDaemon do
 		end
 		{:reply, :ok, state}
 	end
-	defcall start_childs(new_pglist), state: old_state do
-		%StarterState{pglist: pglist, childs: childs} = state = HashUtils.set(old_state, [:pglist], new_pglist)
+	defcall start_childs(pglist), state: state = %StarterState{childs: childs} do
 		res = Enum.map( pglist, 
 				fn(pgname) -> 
 					HashUtils.filter_v(childs, &( &1.pg == pgname ))
 						|> HashUtils.values
 							|> Enum.map( &(&1.func.()) )
 				end ) |> List.flatten
-		if( length(res) != length(HashUtils.keys(state, [:childs])) ) do
-			Logger.warn "Sgs.AutoStartDaemon : warning! Not all childs were started!"
-		end
 		{:reply, :ok, state}
 	end
 

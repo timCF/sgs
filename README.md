@@ -42,6 +42,9 @@ And next define callbacks/api like in ExActor, but with some extra options. You 
 		# when state is going to cleanup, name of process will delete from AutoStartDaemon
 		# You also can execute Sgs.AutoStartDaemon.start_childs/1 where arg - list of 
 		# process groups, Sgs.AutoStartDaemon will start them one by one
+		# Sgs.AutoStartDaemon.set_pglist/1 - set your pglist to start
+		# Sgs.AutoStartDaemon.start_childs/0 - start childs from all groups
+		# Sgs.AutoStartDaemon.start_childs/1 - start childs only from arglist
 	]
 
 	# example :
