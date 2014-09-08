@@ -35,13 +35,13 @@ And next define callbacks/api like in ExActor, but with some extra options. You 
 		# if it false - state save every 10 sec, or more often (for example if
 		# other SGS use this flag == true). By default force_save == false
 		pg: pg, # optionally you can define process group list for autostart. 
-		# groups will start one by one, just write Sgs.AutoStartDaemon.set_pglist(lst)
-		# where lst - list of pg names
-		autostart: func/0, # func with arity 0, I mean using it like
+		autostart: func/0 # func with arity 0, I mean using it like
 		# fn() -> :supervisor.start_child AppName.Supervisor, Supervisor.Spec.worker(ModuleName, 
 		# [nameproc], [id: nameproc]) end
 		# it will start childs where you execute Sgs.AutoStartDaemon.start_childs/0
 		# when state is going to cleanup, name of process will delete from AutoStartDaemon
+		# You also can execute Sgs.AutoStartDaemon.start_childs/1 where arg - list of 
+		# process groups, Sgs.AutoStartDaemon will start them one by one
 	]
 
 	# example :
