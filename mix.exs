@@ -11,7 +11,7 @@ defmodule Sgs.Mixfile do
   #
   # Type `mix help compile.app` for more information
   def application do
-    [applications: [:exdk, :logger],
+    [applications: [:extask, :exdk, :logger],
      mod: {Sgs, []}]
   end
 
@@ -30,7 +30,8 @@ defmodule Sgs.Mixfile do
       {:exdk, github: "timCF/exdk"},
       {:exutils, github: "timCF/exutils"},
 
-      {:exactor, github: "sasa1977/exactor"}
+      {:exactor, github: "sasa1977/exactor"},
+      {:extask, github: "timCF/extask"}
     ]
   end
 end

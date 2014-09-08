@@ -27,7 +27,8 @@ defmodule Sgs do
     import Supervisor.Spec, warn: false
 
     children = [  worker(Sgs.CleanupDaemon, []),
-                  worker(Sgs.AutoStartDaemon, []) #, worker(CompileTest, [:myself])
+                  worker(Sgs.AutoStartDaemon, []),
+                  #worker(GS1, [:my_name]) #, worker(CompileTest, [:myself])
       # Define workers and child supervisors to be supervised
       # worker(Sgs.Worker, [arg1, arg2, arg3])
     ]
@@ -35,6 +36,10 @@ defmodule Sgs do
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Sgs.Supervisor]
-    Supervisor.start_link(children, opts)
+    res = Supervisor.start_link(children, opts)
+  
+    Sgs.AutoStartDaemon.start_childs(["GS1"])
+
+    res
   end
 end

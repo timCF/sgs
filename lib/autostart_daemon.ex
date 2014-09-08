@@ -16,7 +16,7 @@ defmodule Sgs.AutoStartDaemon do
 	end
 	defmodule Child do
 		@derive [HashUtils]
-		defstruct func: nil, pg: :__default_pg__ 
+		defstruct module: nil, pg: :__default_pg__ 
 	end
 
 	definit do
@@ -30,8 +30,9 @@ defmodule Sgs.AutoStartDaemon do
 		res = Enum.map( pglist, 
 				fn(pgname) -> 
 					HashUtils.filter_v(childs, &( &1.pg == pgname ))
-						|> HashUtils.values
-							|> Enum.map( &(&1.func.()) )
+						|> HashUtils.keys
+							|> Enum.map( fn(key) -> ExTask.run( fn() -> HashUtils.get(childs, [key, :module]).__autostart_func__(key) end ) end )
+								|> Enum.map ( &({:result, {:ok, _}} = ExTask.await(&1)) )
 				end ) |> List.flatten
 		if( length(res) != length(HashUtils.keys(state, [:childs])) ) do
 			Logger.warn "Sgs.AutoStartDaemon : warning! Not all childs were started!"
@@ -42,8 +43,9 @@ defmodule Sgs.AutoStartDaemon do
 		res = Enum.map( pglist, 
 				fn(pgname) -> 
 					HashUtils.filter_v(childs, &( &1.pg == pgname ))
-						|> HashUtils.values
-							|> Enum.map( &(&1.func.()) )
+						|> HashUtils.keys
+							|> Enum.map( fn(key) -> ExTask.run( fn() -> HashUtils.get(childs, [key, :module]).__autostart_func__(key) end ) end )
+								|> Enum.map ( &( {:result, {:ok, _}} = ExTask.await(&1)) )
 				end ) |> List.flatten
 		{:reply, :ok, state}
 	end
@@ -56,11 +58,11 @@ defmodule Sgs.AutoStartDaemon do
 		{:reply, :ok, HashUtils.set(state, :pglist, res) |> save_state}
 	end
 
-	defcall add_child(nameproc, func), state: state do
-		{:reply, :ok, HashUtils.add(state, [:childs, nameproc], %Child{func: func}) |> save_state}
+	defcall add_child(nameproc, module), state: state do
+		{:reply, :ok, HashUtils.add(state, [:childs, nameproc], %Child{module: module}) |> save_state}
 	end
-	defcall add_child(nameproc, func, pg), state: state do
-		{:reply, :ok, HashUtils.add(state, [:childs, nameproc], %Child{func: func, pg: pg}) |> save_state}
+	defcall add_child(nameproc, module, pg), state: state do
+		{:reply, :ok, HashUtils.add(state, [:childs, nameproc], %Child{module: module, pg: pg}) |> save_state}
 	end
 
 	defcall delete_child(nameproc), state: state do

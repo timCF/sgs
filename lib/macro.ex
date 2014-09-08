@@ -230,10 +230,18 @@ defmodule Sgs.Macro do
         						nil -> quote do end
         						func -> 
         							case opts[:pg] do
-        								nil -> 	quote do Sgs.AutoStartDaemon.add_child(__nameproc__, fn() -> (unquote(func)).(__nameproc__) end ) end
-        								pg -> quote do Sgs.AutoStartDaemon.add_child(__nameproc__, fn() -> (unquote(func)).(__nameproc__) end, unquote(pg)) end
+        								nil -> 	quote do Sgs.AutoStartDaemon.add_child(__nameproc__, __MODULE__ ) end
+        								pg -> quote do Sgs.AutoStartDaemon.add_child(__nameproc__, __MODULE__, unquote(pg)) end
         							end
         					end
+        autostart_func = case opts[:autostart] do
+        						nil -> quote do end
+        						func -> quote do
+        									def __autostart_func__(nameproc) do
+        										unquote(func).(nameproc)
+        									end
+        								end
+        				end
 
         return_function = case __force_save__ do
         							true -> quote do 
@@ -265,6 +273,7 @@ defmodule Sgs.Macro do
 			# notice, GS is named, name !!is atom!! 
 			definit name, when: is_atom(name), do: ( definit_body( name, Exdk.get(name)) )
 			unquote(priv_function_body)
+			unquote(autostart_func)
 		end
 	end
 

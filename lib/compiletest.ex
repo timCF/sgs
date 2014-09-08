@@ -7,11 +7,17 @@ defmodule GS1 do
 	init_sgs state: :not_found, nameproc: :some_other_name, cleanup_reasons: [:my_reason, :normal] do
 		{:ok , %{nameproc: :some_other_name, state: 2}}
 	end
-	init_sgs state: :not_found, nameproc: :my_name, cleanup_reasons: [:my_reason, :normal] do
+	init_sgs 	state: :not_found, nameproc: :my_name, cleanup_reasons: [:my_reason, :normal], 
+				autostart: fn(name) -> :supervisor.start_child(Sgs.Supervisor, Supervisor.Spec.worker(GS1, [name], [id: name])) end,
+				pg: "GS1" do
 		{:ok , %{nameproc: :my_name, state: 1}}
 	end
 	init_sgs state: :not_found, nameproc: name, cleanup_reasons: [:my_reason, :normal] do
 		{:ok , %{nameproc: name, state: 0}}
+	end
+
+	init_sgs state: some, nameproc: name, cleanup_reasons: [:my_reason, :normal] do
+		{:ok , some}
 	end
 
 	call_sgs get_state, state: state = %{} do
