@@ -38,8 +38,8 @@ defmodule Sgs.AutoStartDaemon do
 		end
 		{:reply, :ok, state}
 	end
-	defcall start_childs(new_pglist), state: state = %StarterState{pglist: pglist, childs: childs} do
-		state = HashUtils.set(state, [:pglist], new_pglist)
+	defcall start_childs(new_pglist), state: old_state do
+		%StarterState{pglist: pglist, childs: childs} = state = HashUtils.set(old_state, [:pglist], new_pglist)
 		res = Enum.map( pglist, 
 				fn(pgname) -> 
 					HashUtils.filter_v(childs, &( &1.pg == pgname ))
