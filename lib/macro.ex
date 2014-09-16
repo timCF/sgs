@@ -318,10 +318,6 @@ defmodule Sgs.Macro do
 		__state__ = opts[:state]
 		__guard__ = opts[:when]
 		__force_save__ = get_force_save_settings(opts[:force_save])
-		__defcall_opts__ = case opts[:timeout] do
-								num when is_integer(num) -> quote do [state: name, timeout: unquote(num)] end 
-								_ -> quote do [state: name] end
-							end
 		{__funcname__, _, _} = funcdef
 
 		return_function = case __force_save__ do
@@ -341,14 +337,21 @@ defmodule Sgs.Macro do
         
         #send :pg2.get_members("priv_funcs_writer")
 		#		|> List.first, %{quoted_to_append: priv_function_body}
-
-		quote do
-			defcall	unquote(funcdef), unquote(__defcall_opts__) do
-				unquote(quoted_func_call)
-			end
-			unquote(priv_function_body)
+		case opts[:timeout] do
+			num when is_integer(num) ->
+				quote do
+					defcall	unquote(funcdef), state: name, timeout: unquote(num) do
+						unquote(quoted_func_call)
+					end
+					unquote(priv_function_body)
+				end
+			_ -> quote do
+					defcall	unquote(funcdef), state: name do
+						unquote(quoted_func_call)
+					end
+					unquote(priv_function_body)
+				end
 		end
-
 	end
 
 	defmacro info_sgs(some, opts \\ [], [do: body]) do
