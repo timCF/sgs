@@ -26,7 +26,7 @@ defmodule Sgs.AutoStartDaemon do
 		end
 	end
 
-	defcall start_childs, state: state = %StarterState{pglist: pglist, childs: childs} do
+	defcall start_childs, state: state = %StarterState{pglist: pglist, childs: childs}, timeout: :timer.minutes(10) do
 		res = Enum.map( pglist, 
 				fn(pgname) -> 
 					HashUtils.filter_v(childs, &( &1.pg == pgname ))
@@ -39,7 +39,7 @@ defmodule Sgs.AutoStartDaemon do
 		end
 		{:reply, :ok, state}
 	end
-	defcall start_childs(pglist), state: state = %StarterState{childs: childs} do
+	defcall start_childs(pglist), state: state = %StarterState{childs: childs}, timeout: :timer.minutes(10) do
 		res = Enum.map( pglist, 
 				fn(pgname) -> 
 					HashUtils.filter_v(childs, &( &1.pg == pgname ))
