@@ -153,7 +153,7 @@ defmodule Sgs.Macro do
 				terminate_body( nameproc, Exdk.get(nameproc), reason )
 			end
 			terminate_sgs [] do end
-			defoverridable [ terminate: 2 ]
+			defoverridable [ terminate_body: 3 ]
 
 			# here we define reserve_save callback by default
 			defp __reserve_save_state__( state, nameproc ) do
